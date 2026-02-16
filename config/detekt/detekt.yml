@@ -1,0 +1,41 @@
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    active: false
+  LongParameterList:
+    active: false
+  TooManyFunctions:
+    active: false
+
+naming:
+  FunctionNaming:
+    active: false
+  MatchingDeclarationName:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+
+empty-blocks:
+  EmptyCatchBlock:
+    active: false
+
+style:
+  MaxLineLength:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  ReturnCount:
+    active: false
+  UnusedPrivateMember:
+    active: false
+  UnusedParameter:
+    active: false
+
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false

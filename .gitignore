@@ -1,0 +1,35 @@
+# IDE
+*.iml
+.idea/
+
+# Android / Gradle
+.gradle/
+.kotlin/
+local.properties
+**/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# iOS / Xcode
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xccheckout
+*.moved-aside
+
+# CocoaPods / SwiftPM (if added later)
+Pods/
+.swiftpm/
+.build/
+
+# Kotlin Multiplatform Apple outputs
+shared/build/XCFrameworks/
