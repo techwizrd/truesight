@@ -1,6 +1,7 @@
 package com.truesight.truesight.shared
 
 internal object DomainMatchers {
+    // TODO: Add a shared helper for `host == root || host.endsWith(".$root")` matchers to reduce repetition.
     fun isGoogleShareHost(host: String): Boolean {
         return host == "share.google.com" || host == "share.google"
     }

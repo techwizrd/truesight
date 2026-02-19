@@ -110,6 +110,20 @@ class UrlCleanerCoreTest {
     }
 
     @Test
+    fun stripsMixedCaseTrackingKeys() {
+        val dirty = "https://example.com/path?UTM_Source=share&GCLID=abc&id=9"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://example.com/path?id=9", cleaned)
+    }
+
+    @Test
+    fun preservesDuplicateNonTrackingParamsWhileStrippingDuplicatesOfTrackingParams() {
+        val dirty = "https://example.com/path?id=1&utm_source=a&id=2&utm_medium=b"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://example.com/path?id=1&id=2", cleaned)
+    }
+
+    @Test
     fun stripsKnownGoogleAdsParamsByDefault() {
         val dirty = "https://example.com/path?gad_source=1&gad_campaignid=55&gbraid=abc&rdclid=77&id=9"
         val cleaned = UrlCleanerCore.clean(dirty)

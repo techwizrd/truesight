@@ -1,5 +1,6 @@
 package com.truesight.truesight.shared
 
+// TODO: Consider grouping vendor toggles to avoid unbounded growth of boolean fields.
 data class CleanerPolicy(
     val googleShareRedirectEnabled: Boolean = true,
     val googleShareStripEnabled: Boolean = true,

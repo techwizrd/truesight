@@ -1,6 +1,7 @@
 package com.truesight.truesight.shared
 
 object TrackingParamStripper {
+    // TODO: Precompute host/policy flags and flatten rule checks to reduce per-param scanning cost.
     private val exactTrackingKeys = setOf(
         "yclid",
         "amp",

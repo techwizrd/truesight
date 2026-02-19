@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 object RemoteRedirectFollower : RedirectFollower {
     private const val tag = "RedirectFollower"
+    // TODO: Gate verbose URL logging to debug builds and redact query values before logging.
     private const val timeoutMs = 3500
     private const val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.46 Mobile Safari/537.36"
     private const val cacheCapacity = 128
@@ -110,6 +111,7 @@ object RemoteRedirectFollower : RedirectFollower {
 
     private data class CacheKey(
         val url: String,
+        // TODO: Narrow cache key to redirect-relevant policy flags to improve hit rate.
         val policy: CleanerPolicy
     )
 
@@ -166,6 +168,7 @@ object RemoteRedirectFollower : RedirectFollower {
                 null
             } else {
                 Log.d(tag, "Body request success code=$responseCode url=$url")
+                // FIXME: readText() is unbounded; cap bytes/chars to avoid large-response memory spikes.
                 connection.inputStream.bufferedReader().use { it.readText() }
             }
         } catch (e: Exception) {

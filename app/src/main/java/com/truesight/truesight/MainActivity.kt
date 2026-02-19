@@ -93,6 +93,7 @@ private data class SharePayload(
     val text: String
 )
 
+// TODO: Split this file into smaller screen/section composables to reduce maintenance overhead.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LinkStripperApp(

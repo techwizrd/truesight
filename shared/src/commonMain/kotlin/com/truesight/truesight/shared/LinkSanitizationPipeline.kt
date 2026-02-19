@@ -4,6 +4,9 @@ internal class LinkSanitizationPipeline(
     private val policy: CleanerPolicy,
     private val resolveRedirect: (String) -> String
 ) {
+    // TODO: Consolidate strip gating in one layer; both pipeline and TrackingParamStripper currently gate by host policy.
+    // TODO: Evaluate strip policy against the final unwrapped/followed host to avoid source-host vs destination-host mismatches.
+    // TODO: Reuse parsed URL parts through stages to avoid repeated parsing across pipeline and stripper.
     fun run(inputUrl: String): String {
         if (inputUrl.isBlank()) {
             return inputUrl
