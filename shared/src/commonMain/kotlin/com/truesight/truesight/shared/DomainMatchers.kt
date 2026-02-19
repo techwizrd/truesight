@@ -28,4 +28,8 @@ internal object DomainMatchers {
     fun isRedfinHost(host: String): Boolean {
         return host == "redfin.com" || host.endsWith(".redfin.com")
     }
+
+    fun isMediumHost(host: String): Boolean {
+        return host == "medium.com" || host.endsWith(".medium.com")
+    }
 }

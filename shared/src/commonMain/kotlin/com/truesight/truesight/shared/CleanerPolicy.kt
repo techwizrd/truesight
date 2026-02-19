@@ -21,7 +21,8 @@ data class CleanerPolicy(
     val linkedInAdsTrackingStripEnabled: Boolean = true,
     val pinterestAdsTrackingStripEnabled: Boolean = true,
     val snapchatAdsTrackingStripEnabled: Boolean = true,
-    val aggressiveGoogleAdsStrippingEnabled: Boolean = false
+    val aggressiveGoogleAdsStrippingEnabled: Boolean = false,
+    val utmTrackingStripEnabled: Boolean = true
 ) {
     fun isRedirectEnabledForHost(host: String): Boolean {
         return resolveHostPolicy(host) { it.redirectEnabled(this) }

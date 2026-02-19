@@ -28,6 +28,9 @@
     <string name="setting_strip_parameters">Strip parameters</string>
     <string name="setting_remove_amazon_affiliate_tag">Remove Amazon affiliate tag</string>
     <string name="setting_twitter_to_nitter">Rewrite Twitter/X to Nitter</string>
+    <string name="settings_general_tracking_title">General tracking</string>
+    <string name="setting_strip_utm">Strip UTM parameters (utm_*)</string>
+    <string name="setting_strip_utm_hint">Applies to links from all domains.</string>
     <string name="settings_ad_tracking_title">Ad tracking vendors</string>
     <string name="vendor_google_ads">Google Ads</string>
     <string name="vendor_meta_ads">Meta Ads</string>

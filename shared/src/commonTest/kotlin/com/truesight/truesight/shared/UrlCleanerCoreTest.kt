@@ -79,6 +79,37 @@ class UrlCleanerCoreTest {
     }
 
     @Test
+    fun stripsMediumTrackingParamsOnMediumHosts() {
+        val dirty = "https://medium.com/@team/story-title-abc123?source=linkShare-abc&sk=deadbeef&id=9"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://medium.com/@team/story-title-abc123?id=9", cleaned)
+    }
+
+    @Test
+    fun keepsMediumTrackingParamsOnNonMediumHosts() {
+        val dirty = "https://example.com/path?source=linkShare-abc&sk=deadbeef&id=9"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://example.com/path?source=linkShare-abc&sk=deadbeef&id=9", cleaned)
+    }
+
+    @Test
+    fun stripsUtmParamsByDefaultAcrossHosts() {
+        val dirty = "https://example.com/path?utm_source=share&utm_medium=social&id=9"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://example.com/path?id=9", cleaned)
+    }
+
+    @Test
+    fun keepsUtmParamsWhenToggleIsDisabled() {
+        val dirty = "https://example.com/path?utm_source=share&utm_medium=social&id=9"
+        val cleaned = UrlCleanerCore.clean(
+            dirty,
+            CleanerPolicy(utmTrackingStripEnabled = false)
+        )
+        assertEquals("https://example.com/path?utm_source=share&utm_medium=social&id=9", cleaned)
+    }
+
+    @Test
     fun stripsKnownGoogleAdsParamsByDefault() {
         val dirty = "https://example.com/path?gad_source=1&gad_campaignid=55&gbraid=abc&rdclid=77&id=9"
         val cleaned = UrlCleanerCore.clean(dirty)

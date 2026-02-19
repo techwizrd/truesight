@@ -21,7 +21,6 @@ object TrackingParamStripper {
     )
 
     private val trackingPrefixes = listOf(
-        "utm_",
         "ga_",
         "pk_",
         "vero_"
@@ -50,6 +49,10 @@ object TrackingParamStripper {
     private val stripRules: List<StripRule> = listOf(
         ExactKeyRule(exactTrackingKeys),
         PrefixRule(trackingPrefixes),
+        PolicyPrefixRule(
+            policyEnabled = { it.utmTrackingStripEnabled },
+            prefixes = listOf("utm_")
+        ),
         PolicyExactKeyRule(
             policyEnabled = { it.googleAdsTrackingStripEnabled },
             keys = setOf(
@@ -109,6 +112,10 @@ object TrackingParamStripper {
         HostExactKeyRule(
             hostMatcher = DomainMatchers::isRedditHost,
             keys = setOf("share_id", "rdt")
+        ),
+        HostExactKeyRule(
+            hostMatcher = DomainMatchers::isMediumHost,
+            keys = setOf("source", "sk")
         ),
         AggressiveGoogleAdsRule,
         AmazonRule
@@ -190,6 +197,15 @@ object TrackingParamStripper {
     ) : StripRule {
         override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
             return policyEnabled(policy) && key in keys
+        }
+    }
+
+    private class PolicyPrefixRule(
+        private val policyEnabled: (CleanerPolicy) -> Boolean,
+        private val prefixes: List<String>
+    ) : StripRule {
+        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
+            return policyEnabled(policy) && prefixes.any { prefix -> key.startsWith(prefix) }
         }
     }
 

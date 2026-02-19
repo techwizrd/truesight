@@ -410,6 +410,21 @@ private fun CleaningPreferencesCard(
         )
         HorizontalDivider()
         Text(
+            text = stringResource(R.string.settings_general_tracking_title),
+            style = MaterialTheme.typography.titleSmall
+        )
+        SettingsToggleRow(
+            labelResId = R.string.setting_strip_utm,
+            checked = policy.utmTrackingStripEnabled,
+            onCheckedChange = { onPolicyChanged(policy.copy(utmTrackingStripEnabled = it)) }
+        )
+        Text(
+            text = stringResource(R.string.setting_strip_utm_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        HorizontalDivider()
+        Text(
             text = stringResource(R.string.settings_ad_tracking_title),
             style = MaterialTheme.typography.titleSmall
         )

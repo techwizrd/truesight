@@ -26,6 +26,7 @@ Truesight extracts links from shared or pasted text, unwraps redirect links, rem
 - Removes common tracking query parameters (`utm_*`, click IDs, etc.).
 - Domain-specific cleaning behavior, including:
   - Instagram share params
+  - Medium tracking params (`source`, `sk`)
   - Amazon tracking/affiliate params (with optional affiliate-tag preservation)
   - Reddit share params (`share_id`, `rdt`)
   - Zillow and Redfin tracking params
@@ -33,6 +34,9 @@ Truesight extracts links from shared or pasted text, unwraps redirect links, rem
 - Per-domain policy controls for:
   - redirect/unwrap behavior
   - parameter stripping behavior
+- Global UTM stripping with a dedicated settings toggle:
+  - removes `utm_*` params on all hosts when enabled (default)
+  - preserves `utm_*` params when disabled
 - Android share-overlay flow for fast cleaning from other apps.
 - KMP shared cleaner core with iOS adapter scaffolding.
 

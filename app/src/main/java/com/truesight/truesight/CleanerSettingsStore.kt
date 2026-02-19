@@ -28,7 +28,8 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
             linkedInAdsTrackingStripEnabled = prefs.getBoolean(keyLinkedInAdsTrackingStrip, true),
             pinterestAdsTrackingStripEnabled = prefs.getBoolean(keyPinterestAdsTrackingStrip, true),
             snapchatAdsTrackingStripEnabled = prefs.getBoolean(keySnapchatAdsTrackingStrip, true),
-            aggressiveGoogleAdsStrippingEnabled = prefs.getBoolean(keyAggressiveGoogleAdsStripping, false)
+            aggressiveGoogleAdsStrippingEnabled = prefs.getBoolean(keyAggressiveGoogleAdsStripping, false),
+            utmTrackingStripEnabled = prefs.getBoolean(keyUtmTrackingStrip, true)
         )
     }
 
@@ -55,6 +56,7 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
             .putBoolean(keyPinterestAdsTrackingStrip, policy.pinterestAdsTrackingStripEnabled)
             .putBoolean(keySnapchatAdsTrackingStrip, policy.snapchatAdsTrackingStripEnabled)
             .putBoolean(keyAggressiveGoogleAdsStripping, policy.aggressiveGoogleAdsStrippingEnabled)
+            .putBoolean(keyUtmTrackingStrip, policy.utmTrackingStripEnabled)
             .apply()
     }
 
@@ -82,5 +84,6 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
         private const val keyPinterestAdsTrackingStrip = "pinterest_ads_tracking_strip_enabled"
         private const val keySnapchatAdsTrackingStrip = "snapchat_ads_tracking_strip_enabled"
         private const val keyAggressiveGoogleAdsStripping = "aggressive_google_ads_stripping_enabled"
+        private const val keyUtmTrackingStrip = "utm_tracking_strip_enabled"
     }
 }
