@@ -1,13 +1,16 @@
 package com.truesight.truesight.shared
 
 internal object DomainMatchers {
-    // TODO: Add a shared helper for `host == root || host.endsWith(".$root")` matchers to reduce repetition.
+    private fun isHostOrSubdomain(host: String, root: String): Boolean {
+        return host == root || host.endsWith(".$root")
+    }
+
     fun isGoogleShareHost(host: String): Boolean {
         return host == "share.google.com" || host == "share.google"
     }
 
     fun isRedditHost(host: String): Boolean {
-        return host == "redd.it" || host == "reddit.com" || host.endsWith(".reddit.com")
+        return host == "redd.it" || isHostOrSubdomain(host, "reddit.com")
     }
 
     fun isAmazonHost(host: String): Boolean {
@@ -15,22 +18,22 @@ internal object DomainMatchers {
     }
 
     fun isInstagramHost(host: String): Boolean {
-        return host == "instagram.com" || host.endsWith(".instagram.com")
+        return isHostOrSubdomain(host, "instagram.com")
     }
 
     fun isAmpCacheHost(host: String): Boolean {
-        return host == "cdn.ampproject.org" || host.endsWith(".cdn.ampproject.org")
+        return isHostOrSubdomain(host, "cdn.ampproject.org")
     }
 
     fun isZillowHost(host: String): Boolean {
-        return host == "zillow.com" || host.endsWith(".zillow.com")
+        return isHostOrSubdomain(host, "zillow.com")
     }
 
     fun isRedfinHost(host: String): Boolean {
-        return host == "redfin.com" || host.endsWith(".redfin.com")
+        return isHostOrSubdomain(host, "redfin.com")
     }
 
     fun isMediumHost(host: String): Boolean {
-        return host == "medium.com" || host.endsWith(".medium.com")
+        return isHostOrSubdomain(host, "medium.com")
     }
 }
