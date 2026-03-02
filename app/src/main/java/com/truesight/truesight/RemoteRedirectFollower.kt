@@ -5,6 +5,7 @@ import com.truesight.truesight.shared.RemoteRedirectResolver
 import com.truesight.truesight.shared.RedirectFollower
 import java.net.HttpURLConnection
 import java.net.URL
+import java.io.InputStream
 import java.util.LinkedHashMap
 import java.util.concurrent.TimeUnit
 
@@ -15,6 +16,7 @@ object RemoteRedirectFollower : RedirectFollower {
     private const val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.46 Mobile Safari/537.36"
     private const val cacheCapacity = 128
     private const val cleanupInterval = 16
+    private const val maxBodyChars = 256_000
     private val successTtlMs = TimeUnit.MINUTES.toMillis(10)
     private val unchangedTtlMs = TimeUnit.MINUTES.toMillis(1)
     private val cacheLock = Any()
@@ -168,14 +170,33 @@ object RemoteRedirectFollower : RedirectFollower {
                 null
             } else {
                 Log.d(tag, "Body request success code=$responseCode url=$url")
-                // FIXME: readText() is unbounded; cap bytes/chars to avoid large-response memory spikes.
-                connection.inputStream.bufferedReader().use { it.readText() }
+                connection.inputStream.use { readBodyWithLimit(it) }
             }
         } catch (e: Exception) {
             Log.w(tag, "Failed fetching body for url=$url", e)
             null
         } finally {
             connection.disconnect()
+        }
+    }
+
+    internal fun readBodyWithLimit(inputStream: InputStream, maxChars: Int = maxBodyChars): String {
+        require(maxChars > 0) { "maxChars must be greater than zero" }
+
+        return inputStream.bufferedReader().use { reader ->
+            val content = StringBuilder(minOf(4096, maxChars))
+            val buffer = CharArray(2048)
+
+            while (content.length < maxChars) {
+                val remaining = maxChars - content.length
+                val charsRead = reader.read(buffer, 0, minOf(buffer.size, remaining))
+                if (charsRead == -1) {
+                    break
+                }
+                content.append(buffer, 0, charsRead)
+            }
+
+            content.toString()
         }
     }
 }
