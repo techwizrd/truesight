@@ -53,6 +53,19 @@ class UrlCleanerCoreTest {
     }
 
     @Test
+    fun appliesStripPolicyUsingFinalResolvedHost() {
+        val dirty = "https://share.google.com/some/link"
+        val cleaned = UrlCleanerCore.clean(
+            dirty,
+            CleanerPolicy(googleShareStripEnabled = false)
+        ) {
+            "https://example.com/path?utm_source=share&id=9"
+        }
+
+        assertEquals("https://example.com/path?id=9", cleaned)
+    }
+
+    @Test
     fun engineUsesRedirectFollowerContract() {
         val engine = UrlCleanerEngine(
             RedirectFollower { _, _ -> "https://example.com/path?utm_source=x&id=9" }
