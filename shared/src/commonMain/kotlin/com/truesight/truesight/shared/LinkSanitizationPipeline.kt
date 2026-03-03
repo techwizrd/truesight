@@ -4,7 +4,6 @@ internal class LinkSanitizationPipeline(
     private val policy: CleanerPolicy,
     private val resolveRedirect: (String) -> String
 ) {
-    // TODO: Reuse parsed URL parts through stages to avoid repeated parsing across pipeline and stripper.
     fun run(inputUrl: String): String {
         if (inputUrl.isBlank()) {
             return inputUrl
@@ -17,7 +16,9 @@ internal class LinkSanitizationPipeline(
         val unwrapped = RedirectUnwrapper.unwrap(normalizedInput, policy)
         val followed = if (shouldResolveRedirect) resolveRedirect(unwrapped) else unwrapped
         val unwrappedFollowed = RedirectUnwrapper.unwrap(followed, policy)
-        val stripped = TrackingParamStripper.strip(unwrappedFollowed, policy)
+        val stripped = UrlPartsParser.parse(unwrappedFollowed)?.let { parsedFinalUrl ->
+            TrackingParamStripper.strip(parsedFinalUrl, policy)
+        } ?: TrackingParamStripper.strip(unwrappedFollowed, policy)
 
         return if (policy.twitterToNitterEnabled) {
             TwitterToNitterRewriter.rewrite(stripped)

@@ -100,10 +100,14 @@ object TrackingParamStripper {
 
     fun strip(url: String, policy: CleanerPolicy): String {
         val parts = UrlPartsParser.parse(url) ?: return trimEmptyFragment(url)
-        val rawQuery = parts.rawQuery ?: return trimEmptyFragment(url)
+        return strip(parts, policy)
+    }
+
+    internal fun strip(parts: UrlParts, policy: CleanerPolicy): String {
+        val rawQuery = parts.rawQuery ?: return trimEmptyFragment(parts.build())
 
         if (!policy.isStripEnabledForHost(parts.host)) {
-            return trimEmptyFragment(url)
+            return trimEmptyFragment(parts.build())
         }
 
         val context = StripContext(
@@ -131,7 +135,7 @@ object TrackingParamStripper {
             context = context
         )
 
-        return trimEmptyFragment(parts.build(cleanedQuery))
+        return trimEmptyFragment(parts.build(rawQueryOverride = cleanedQuery))
     }
 
     private fun buildCleanedQuery(rawQuery: String, context: StripContext): String? {
