@@ -38,7 +38,10 @@ object RemoteRedirectFollower : RedirectFollower {
 
     fun followIfNeeded(url: String, policy: CleanerPolicy): String {
         val now = System.currentTimeMillis()
-        val cacheKey = CacheKey(url = url, policy = policy)
+        val cacheKey = CacheKey(
+            url = url,
+            redirectPolicy = RedirectPolicyCacheKey.from(policy)
+        )
         synchronized(cacheLock) {
             val cached = redirectCache[cacheKey]
             if (cached != null) {
@@ -110,9 +113,24 @@ object RemoteRedirectFollower : RedirectFollower {
 
     private data class CacheKey(
         val url: String,
-        // TODO: Narrow cache key to redirect-relevant policy flags to improve hit rate.
-        val policy: CleanerPolicy
+        val redirectPolicy: RedirectPolicyCacheKey
     )
+
+    private data class RedirectPolicyCacheKey(
+        val googleShareRedirectEnabled: Boolean,
+        val redditRedirectEnabled: Boolean,
+        val amazonRedirectEnabled: Boolean
+    ) {
+        companion object {
+            fun from(policy: CleanerPolicy): RedirectPolicyCacheKey {
+                return RedirectPolicyCacheKey(
+                    googleShareRedirectEnabled = policy.googleShareRedirectEnabled,
+                    redditRedirectEnabled = policy.redditRedirectEnabled,
+                    amazonRedirectEnabled = policy.amazonRedirectEnabled
+                )
+            }
+        }
+    }
 
     private fun fetchRedirectLocation(url: String): String? {
         val connection = try {
