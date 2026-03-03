@@ -11,12 +11,13 @@ import java.util.concurrent.TimeUnit
 
 object RemoteRedirectFollower : RedirectFollower {
     private const val tag = "RedirectFollower"
-    // TODO: Gate verbose URL logging to debug builds and redact query values before logging.
     private const val timeoutMs = 3500
     private const val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.46 Mobile Safari/537.36"
     private const val cacheCapacity = 128
     private const val cleanupInterval = 16
     private const val maxBodyChars = 256_000
+    private val queryParamValuePattern = Regex("([?&][^=&#\\s]+)=([^&#\\s]*)")
+    private val verboseUrlLoggingEnabled: Boolean by lazy { resolveDebugBuildFlag() }
     private val successTtlMs = TimeUnit.MINUTES.toMillis(10)
     private val unchangedTtlMs = TimeUnit.MINUTES.toMillis(1)
     private val cacheLock = Any()
@@ -42,12 +43,12 @@ object RemoteRedirectFollower : RedirectFollower {
             val cached = redirectCache[cacheKey]
             if (cached != null) {
                 if (cached.expiresAtMs > now) {
-                    Log.d(tag, "Cache hit for url=$url")
+                    debugLog("Cache hit for url=$url")
                     return cached.value
                 }
 
                 redirectCache.remove(cacheKey)
-                Log.d(tag, "Cache expired for url=$url")
+                debugLog("Cache expired for url=$url")
             }
         }
 
@@ -62,13 +63,9 @@ object RemoteRedirectFollower : RedirectFollower {
             },
             logger = { level, message, error ->
                 when (level) {
-                    RemoteRedirectResolver.LogLevel.DEBUG -> Log.d(tag, message)
+                    RemoteRedirectResolver.LogLevel.DEBUG -> debugLog(message)
                     RemoteRedirectResolver.LogLevel.WARN -> {
-                        if (error != null) {
-                            Log.w(tag, message, error)
-                        } else {
-                            Log.w(tag, message)
-                        }
+                        warnLog(message, error)
                     }
                 }
             }
@@ -127,22 +124,22 @@ object RemoteRedirectFollower : RedirectFollower {
                 setRequestProperty("User-Agent", userAgent)
             }
         } catch (e: Exception) {
-            Log.w(tag, "Failed opening connection for url=$url", e)
+            warnLog("Failed opening connection for url=$url", e)
             return null
         }
 
         return try {
             val responseCode = connection.responseCode
             if (responseCode !in 300..399) {
-                Log.d(tag, "No redirect for url=$url code=$responseCode")
+                debugLog("No redirect for url=$url code=$responseCode")
                 null
             } else {
                 val location = connection.getHeaderField("Location")
-                Log.d(tag, "Redirect response for url=$url code=$responseCode location=$location")
+                debugLog("Redirect response for url=$url code=$responseCode location=$location")
                 location
             }
         } catch (e: Exception) {
-            Log.w(tag, "Failed reading redirect response for url=$url", e)
+            warnLog("Failed reading redirect response for url=$url", e)
             null
         } finally {
             connection.disconnect()
@@ -159,24 +156,56 @@ object RemoteRedirectFollower : RedirectFollower {
                 setRequestProperty("User-Agent", userAgent)
             }
         } catch (e: Exception) {
-            Log.w(tag, "Failed opening body connection for url=$url", e)
+            warnLog("Failed opening body connection for url=$url", e)
             return null
         }
 
         return try {
             val responseCode = connection.responseCode
             if (responseCode !in 200..299) {
-                Log.d(tag, "Body request failed code=$responseCode url=$url")
+                debugLog("Body request failed code=$responseCode url=$url")
                 null
             } else {
-                Log.d(tag, "Body request success code=$responseCode url=$url")
+                debugLog("Body request success code=$responseCode url=$url")
                 connection.inputStream.use { readBodyWithLimit(it) }
             }
         } catch (e: Exception) {
-            Log.w(tag, "Failed fetching body for url=$url", e)
+            warnLog("Failed fetching body for url=$url", e)
             null
         } finally {
             connection.disconnect()
+        }
+    }
+
+    private fun debugLog(message: String) {
+        if (!verboseUrlLoggingEnabled) {
+            return
+        }
+        Log.d(tag, redactQueryValues(message))
+    }
+
+    private fun warnLog(message: String, error: Throwable? = null) {
+        val safeMessage = redactQueryValues(message)
+        if (error != null) {
+            Log.w(tag, safeMessage, error)
+        } else {
+            Log.w(tag, safeMessage)
+        }
+    }
+
+    private fun redactQueryValues(message: String): String {
+        return queryParamValuePattern.replace(message) { match ->
+            "${match.groupValues[1]}=<redacted>"
+        }
+    }
+
+    private fun resolveDebugBuildFlag(): Boolean {
+        return try {
+            Class.forName("com.truesight.truesight.BuildConfig")
+                .getField("DEBUG")
+                .getBoolean(null)
+        } catch (_: Exception) {
+            false
         }
     }
 
