@@ -1,7 +1,6 @@
 package com.truesight.truesight.shared
 
 object TrackingParamStripper {
-    // TODO: Precompute host/policy flags and flatten rule checks to reduce per-param scanning cost.
     private val exactTrackingKeys = setOf(
         "yclid",
         "amp",
@@ -47,79 +46,52 @@ object TrackingParamStripper {
         "pf_rd_"
     )
 
-    private val stripRules: List<StripRule> = listOf(
-        ExactKeyRule(exactTrackingKeys),
-        PrefixRule(trackingPrefixes),
-        PolicyPrefixRule(
-            policyEnabled = { it.utmTrackingStripEnabled },
-            prefixes = listOf("utm_")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.googleAdsTrackingStripEnabled },
-            keys = setOf(
-                "gclid",
-                "dclid",
-                "rdclid",
-                "gclsrc",
-                "gbraid",
-                "wbraid",
-                "gad_source",
-                "gad_campaignid",
-                "gad_adgroupid",
-                "gad_keywordid",
-                "gad_adid"
-            )
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.metaAdsTrackingStripEnabled },
-            keys = setOf("fbclid", "fbadid")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.microsoftAdsTrackingStripEnabled },
-            keys = setOf("msclkid")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.tiktokAdsTrackingStripEnabled },
-            keys = setOf("ttclid", "ttadid")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.twitterAdsTrackingStripEnabled },
-            keys = setOf("twclid")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.linkedInAdsTrackingStripEnabled },
-            keys = setOf("li_fat_id")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.pinterestAdsTrackingStripEnabled },
-            keys = setOf("epik")
-        ),
-        PolicyExactKeyRule(
-            policyEnabled = { it.snapchatAdsTrackingStripEnabled },
-            keys = setOf("sccid", "sc_click_id")
-        ),
-        HostExactKeyRule(
-            hostMatcher = DomainMatchers::isInstagramHost,
-            keys = setOf("igsh", "igshid", "shid")
-        ),
-        HostExactKeyRule(
-            hostMatcher = DomainMatchers::isZillowHost,
-            keys = setOf("rtoken", "mibextid")
-        ),
-        HostExactKeyRule(
-            hostMatcher = DomainMatchers::isRedfinHost,
-            keys = setOf("riftinfo", "rf_source", "rf_referrer")
-        ),
-        HostExactKeyRule(
-            hostMatcher = DomainMatchers::isRedditHost,
-            keys = setOf("share_id", "rdt")
-        ),
-        HostExactKeyRule(
-            hostMatcher = DomainMatchers::isMediumHost,
-            keys = setOf("source", "sk")
-        ),
-        AggressiveGoogleAdsRule,
-        AmazonRule
+    private val googleAdsTrackingKeys = setOf(
+        "gclid",
+        "dclid",
+        "rdclid",
+        "gclsrc",
+        "gbraid",
+        "wbraid",
+        "gad_source",
+        "gad_campaignid",
+        "gad_adgroupid",
+        "gad_keywordid",
+        "gad_adid"
+    )
+
+    private val metaAdsTrackingKeys = setOf("fbclid", "fbadid")
+    private val microsoftAdsTrackingKeys = setOf("msclkid")
+    private val tiktokAdsTrackingKeys = setOf("ttclid", "ttadid")
+    private val twitterAdsTrackingKeys = setOf("twclid")
+    private val linkedInAdsTrackingKeys = setOf("li_fat_id")
+    private val pinterestAdsTrackingKeys = setOf("epik")
+    private val snapchatAdsTrackingKeys = setOf("sccid", "sc_click_id")
+
+    private val instagramHostTrackingKeys = setOf("igsh", "igshid", "shid")
+    private val zillowHostTrackingKeys = setOf("rtoken", "mibextid")
+    private val redfinHostTrackingKeys = setOf("riftinfo", "rf_source", "rf_referrer")
+    private val redditHostTrackingKeys = setOf("share_id", "rdt")
+    private val mediumHostTrackingKeys = setOf("source", "sk")
+
+    private data class StripContext(
+        val isAmazonHost: Boolean,
+        val isInstagramHost: Boolean,
+        val isZillowHost: Boolean,
+        val isRedfinHost: Boolean,
+        val isRedditHost: Boolean,
+        val isMediumHost: Boolean,
+        val stripUtm: Boolean,
+        val stripGoogleAds: Boolean,
+        val stripAggressiveGoogleAds: Boolean,
+        val stripMetaAds: Boolean,
+        val stripMicrosoftAds: Boolean,
+        val stripTikTokAds: Boolean,
+        val stripTwitterAds: Boolean,
+        val stripLinkedInAds: Boolean,
+        val stripPinterestAds: Boolean,
+        val stripSnapchatAds: Boolean,
+        val stripAmazonAffiliateTag: Boolean
     )
 
     fun strip(url: String): String {
@@ -134,23 +106,42 @@ object TrackingParamStripper {
             return trimEmptyFragment(url)
         }
 
+        val context = StripContext(
+            isAmazonHost = DomainMatchers.isAmazonHost(parts.host),
+            isInstagramHost = DomainMatchers.isInstagramHost(parts.host),
+            isZillowHost = DomainMatchers.isZillowHost(parts.host),
+            isRedfinHost = DomainMatchers.isRedfinHost(parts.host),
+            isRedditHost = DomainMatchers.isRedditHost(parts.host),
+            isMediumHost = DomainMatchers.isMediumHost(parts.host),
+            stripUtm = policy.utmTrackingStripEnabled,
+            stripGoogleAds = policy.googleAdsTrackingStripEnabled,
+            stripAggressiveGoogleAds = policy.googleAdsTrackingStripEnabled && policy.aggressiveGoogleAdsStrippingEnabled,
+            stripMetaAds = policy.metaAdsTrackingStripEnabled,
+            stripMicrosoftAds = policy.microsoftAdsTrackingStripEnabled,
+            stripTikTokAds = policy.tiktokAdsTrackingStripEnabled,
+            stripTwitterAds = policy.twitterAdsTrackingStripEnabled,
+            stripLinkedInAds = policy.linkedInAdsTrackingStripEnabled,
+            stripPinterestAds = policy.pinterestAdsTrackingStripEnabled,
+            stripSnapchatAds = policy.snapchatAdsTrackingStripEnabled,
+            stripAmazonAffiliateTag = policy.amazonRemoveAffiliateTagEnabled
+        )
+
         val cleanedQuery = buildCleanedQuery(
             rawQuery = rawQuery,
-            host = parts.host,
-            policy = policy
+            context = context
         )
 
         return trimEmptyFragment(parts.build(cleanedQuery))
     }
 
-    private fun buildCleanedQuery(rawQuery: String, host: String, policy: CleanerPolicy): String? {
+    private fun buildCleanedQuery(rawQuery: String, context: StripContext): String? {
         val builder = StringBuilder(rawQuery.length)
         var start = 0
 
         while (start <= rawQuery.length) {
             val separatorIndex = rawQuery.indexOf('&', start)
             val end = if (separatorIndex == -1) rawQuery.length else separatorIndex
-            if (end > start && !shouldStrip(host, policy, rawQuery, start, end)) {
+            if (end > start && !shouldStrip(context, rawQuery, start, end)) {
                 if (builder.isNotEmpty()) {
                     builder.append('&')
                 }
@@ -166,81 +157,81 @@ object TrackingParamStripper {
         return builder.toString().ifBlank { null }
     }
 
-    private fun shouldStrip(host: String, policy: CleanerPolicy, rawQuery: String, start: Int, end: Int): Boolean {
+    private fun shouldStrip(context: StripContext, rawQuery: String, start: Int, end: Int): Boolean {
         val equalsIndex = rawQuery.indexOf('=', start).takeIf { it in (start + 1) until end } ?: end
         if (equalsIndex <= start) {
             return false
         }
 
         val key = rawQuery.substring(start, equalsIndex).lowercase()
-        return stripRules.any { rule -> rule.shouldStrip(host, policy, key) }
-    }
-
-    private interface StripRule {
-        fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean
-    }
-
-    private class ExactKeyRule(private val keys: Set<String>) : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return key in keys
+        if (key in exactTrackingKeys || startsWithAny(key, trackingPrefixes)) {
+            return true
         }
+
+        if (context.stripUtm && key.startsWith("utm_")) {
+            return true
+        }
+
+        if (context.stripGoogleAds && key in googleAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripAggressiveGoogleAds && key.startsWith("gad_")) {
+            return true
+        }
+
+        if (context.stripMetaAds && key in metaAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripMicrosoftAds && key in microsoftAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripTikTokAds && key in tiktokAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripTwitterAds && key in twitterAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripLinkedInAds && key in linkedInAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripPinterestAds && key in pinterestAdsTrackingKeys) {
+            return true
+        }
+        if (context.stripSnapchatAds && key in snapchatAdsTrackingKeys) {
+            return true
+        }
+
+        if (context.isInstagramHost && key in instagramHostTrackingKeys) {
+            return true
+        }
+        if (context.isZillowHost && key in zillowHostTrackingKeys) {
+            return true
+        }
+        if (context.isRedfinHost && key in redfinHostTrackingKeys) {
+            return true
+        }
+        if (context.isRedditHost && key in redditHostTrackingKeys) {
+            return true
+        }
+        if (context.isMediumHost && key in mediumHostTrackingKeys) {
+            return true
+        }
+
+        if (!context.isAmazonHost) {
+            return false
+        }
+
+        if (key in amazonTrackingKeys || key == "ref") {
+            return true
+        }
+        if (context.stripAmazonAffiliateTag && key == "tag") {
+            return true
+        }
+        return startsWithAny(key, amazonTrackingPrefixes)
     }
 
-    private class PrefixRule(private val prefixes: List<String>) : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return prefixes.any { prefix -> key.startsWith(prefix) }
-        }
-    }
-
-    private class PolicyExactKeyRule(
-        private val policyEnabled: (CleanerPolicy) -> Boolean,
-        private val keys: Set<String>
-    ) : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return policyEnabled(policy) && key in keys
-        }
-    }
-
-    private class PolicyPrefixRule(
-        private val policyEnabled: (CleanerPolicy) -> Boolean,
-        private val prefixes: List<String>
-    ) : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return policyEnabled(policy) && prefixes.any { prefix -> key.startsWith(prefix) }
-        }
-    }
-
-    private class HostExactKeyRule(
-        private val hostMatcher: (String) -> Boolean,
-        private val keys: Set<String>
-    ) : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return hostMatcher(host) && key in keys
-        }
-    }
-
-    private object AmazonRule : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            if (!DomainMatchers.isAmazonHost(host)) {
-                return false
-            }
-
-            if (key in amazonTrackingKeys || key == "ref") {
-                return true
-            }
-            if (policy.amazonRemoveAffiliateTagEnabled && key == "tag") {
-                return true
-            }
-            return amazonTrackingPrefixes.any { prefix -> key.startsWith(prefix) }
-        }
-    }
-
-    private object AggressiveGoogleAdsRule : StripRule {
-        override fun shouldStrip(host: String, policy: CleanerPolicy, key: String): Boolean {
-            return policy.googleAdsTrackingStripEnabled &&
-                policy.aggressiveGoogleAdsStrippingEnabled &&
-                key.startsWith("gad_")
-        }
+    private fun startsWithAny(key: String, prefixes: List<String>): Boolean {
+        return prefixes.any { prefix -> key.startsWith(prefix) }
     }
 
     private fun trimEmptyFragment(url: String): String {
