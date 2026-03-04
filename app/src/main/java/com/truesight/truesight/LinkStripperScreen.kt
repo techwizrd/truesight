@@ -388,65 +388,85 @@ private fun CleaningPreferencesCard(
         AdVendorSettingsSection(titleResId = R.string.vendor_google_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_google_ads,
-                checked = policy.googleAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(googleAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.googleEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(
+                        policy.copy(adTracking = policy.adTracking.copy(googleEnabled = it))
+                    )
+                }
             )
             SettingsToggleRow(
                 labelResId = R.string.setting_aggressive_google_ads_stripping,
-                checked = policy.aggressiveGoogleAdsStrippingEnabled,
-                enabled = policy.googleAdsTrackingStripEnabled,
+                checked = policy.adTracking.googleAggressiveEnabled,
+                enabled = policy.adTracking.googleEnabled,
                 onCheckedChange = {
-                    onPolicyChanged(policy.copy(aggressiveGoogleAdsStrippingEnabled = it))
+                    onPolicyChanged(
+                        policy.copy(adTracking = policy.adTracking.copy(googleAggressiveEnabled = it))
+                    )
                 }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_meta_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_meta_ads,
-                checked = policy.metaAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(metaAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.metaEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(metaEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_microsoft_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_microsoft_ads,
-                checked = policy.microsoftAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(microsoftAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.microsoftEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(microsoftEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_tiktok_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_tiktok_ads,
-                checked = policy.tiktokAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(tiktokAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.tiktokEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(tiktokEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_twitter_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_twitter_ads,
-                checked = policy.twitterAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(twitterAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.twitterEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(twitterEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_linkedin_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_linkedin_ads,
-                checked = policy.linkedInAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(linkedInAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.linkedInEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(linkedInEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_pinterest_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_pinterest_ads,
-                checked = policy.pinterestAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(pinterestAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.pinterestEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(pinterestEnabled = it)))
+                }
             )
         }
         AdVendorSettingsSection(titleResId = R.string.vendor_snapchat_ads) {
             SettingsToggleRow(
                 labelResId = R.string.setting_strip_snapchat_ads,
-                checked = policy.snapchatAdsTrackingStripEnabled,
-                onCheckedChange = { onPolicyChanged(policy.copy(snapchatAdsTrackingStripEnabled = it)) }
+                checked = policy.adTracking.snapchatEnabled,
+                onCheckedChange = {
+                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(snapchatEnabled = it)))
+                }
             )
         }
     }

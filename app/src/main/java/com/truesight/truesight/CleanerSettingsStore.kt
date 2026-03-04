@@ -20,15 +20,17 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
             ampCacheRedirectEnabled = prefs.getBoolean(keyAmpCacheRedirect, true),
             ampCacheStripEnabled = prefs.getBoolean(keyAmpCacheStrip, true),
             twitterToNitterEnabled = prefs.getBoolean(keyTwitterToNitter, false),
-            googleAdsTrackingStripEnabled = prefs.getBoolean(keyGoogleAdsTrackingStrip, true),
-            metaAdsTrackingStripEnabled = prefs.getBoolean(keyMetaAdsTrackingStrip, true),
-            microsoftAdsTrackingStripEnabled = prefs.getBoolean(keyMicrosoftAdsTrackingStrip, true),
-            tiktokAdsTrackingStripEnabled = prefs.getBoolean(keyTiktokAdsTrackingStrip, true),
-            twitterAdsTrackingStripEnabled = prefs.getBoolean(keyTwitterAdsTrackingStrip, true),
-            linkedInAdsTrackingStripEnabled = prefs.getBoolean(keyLinkedInAdsTrackingStrip, true),
-            pinterestAdsTrackingStripEnabled = prefs.getBoolean(keyPinterestAdsTrackingStrip, true),
-            snapchatAdsTrackingStripEnabled = prefs.getBoolean(keySnapchatAdsTrackingStrip, true),
-            aggressiveGoogleAdsStrippingEnabled = prefs.getBoolean(keyAggressiveGoogleAdsStripping, false),
+            adTracking = AdTrackingPolicy(
+                googleEnabled = prefs.getBoolean(keyGoogleAdsTrackingStrip, true),
+                metaEnabled = prefs.getBoolean(keyMetaAdsTrackingStrip, true),
+                microsoftEnabled = prefs.getBoolean(keyMicrosoftAdsTrackingStrip, true),
+                tiktokEnabled = prefs.getBoolean(keyTiktokAdsTrackingStrip, true),
+                twitterEnabled = prefs.getBoolean(keyTwitterAdsTrackingStrip, true),
+                linkedInEnabled = prefs.getBoolean(keyLinkedInAdsTrackingStrip, true),
+                pinterestEnabled = prefs.getBoolean(keyPinterestAdsTrackingStrip, true),
+                snapchatEnabled = prefs.getBoolean(keySnapchatAdsTrackingStrip, true),
+                googleAggressiveEnabled = prefs.getBoolean(keyAggressiveGoogleAdsStripping, false)
+            ),
             utmTrackingStripEnabled = prefs.getBoolean(keyUtmTrackingStrip, true)
         )
     }
@@ -47,15 +49,15 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
             .putBoolean(keyAmpCacheRedirect, policy.ampCacheRedirectEnabled)
             .putBoolean(keyAmpCacheStrip, policy.ampCacheStripEnabled)
             .putBoolean(keyTwitterToNitter, policy.twitterToNitterEnabled)
-            .putBoolean(keyGoogleAdsTrackingStrip, policy.googleAdsTrackingStripEnabled)
-            .putBoolean(keyMetaAdsTrackingStrip, policy.metaAdsTrackingStripEnabled)
-            .putBoolean(keyMicrosoftAdsTrackingStrip, policy.microsoftAdsTrackingStripEnabled)
-            .putBoolean(keyTiktokAdsTrackingStrip, policy.tiktokAdsTrackingStripEnabled)
-            .putBoolean(keyTwitterAdsTrackingStrip, policy.twitterAdsTrackingStripEnabled)
-            .putBoolean(keyLinkedInAdsTrackingStrip, policy.linkedInAdsTrackingStripEnabled)
-            .putBoolean(keyPinterestAdsTrackingStrip, policy.pinterestAdsTrackingStripEnabled)
-            .putBoolean(keySnapchatAdsTrackingStrip, policy.snapchatAdsTrackingStripEnabled)
-            .putBoolean(keyAggressiveGoogleAdsStripping, policy.aggressiveGoogleAdsStrippingEnabled)
+            .putBoolean(keyGoogleAdsTrackingStrip, policy.adTracking.googleEnabled)
+            .putBoolean(keyMetaAdsTrackingStrip, policy.adTracking.metaEnabled)
+            .putBoolean(keyMicrosoftAdsTrackingStrip, policy.adTracking.microsoftEnabled)
+            .putBoolean(keyTiktokAdsTrackingStrip, policy.adTracking.tiktokEnabled)
+            .putBoolean(keyTwitterAdsTrackingStrip, policy.adTracking.twitterEnabled)
+            .putBoolean(keyLinkedInAdsTrackingStrip, policy.adTracking.linkedInEnabled)
+            .putBoolean(keyPinterestAdsTrackingStrip, policy.adTracking.pinterestEnabled)
+            .putBoolean(keySnapchatAdsTrackingStrip, policy.adTracking.snapchatEnabled)
+            .putBoolean(keyAggressiveGoogleAdsStripping, policy.adTracking.googleAggressiveEnabled)
             .putBoolean(keyUtmTrackingStrip, policy.utmTrackingStripEnabled)
             .apply()
     }

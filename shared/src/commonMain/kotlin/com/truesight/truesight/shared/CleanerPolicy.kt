@@ -1,6 +1,17 @@
 package com.truesight.truesight.shared
 
-// TODO: Consider grouping vendor toggles to avoid unbounded growth of boolean fields.
+data class AdTrackingPolicy(
+    val googleEnabled: Boolean = true,
+    val googleAggressiveEnabled: Boolean = false,
+    val metaEnabled: Boolean = true,
+    val microsoftEnabled: Boolean = true,
+    val tiktokEnabled: Boolean = true,
+    val twitterEnabled: Boolean = true,
+    val linkedInEnabled: Boolean = true,
+    val pinterestEnabled: Boolean = true,
+    val snapchatEnabled: Boolean = true
+)
+
 data class CleanerPolicy(
     val googleShareRedirectEnabled: Boolean = true,
     val googleShareStripEnabled: Boolean = true,
@@ -14,15 +25,7 @@ data class CleanerPolicy(
     val ampCacheRedirectEnabled: Boolean = true,
     val ampCacheStripEnabled: Boolean = true,
     val twitterToNitterEnabled: Boolean = false,
-    val googleAdsTrackingStripEnabled: Boolean = true,
-    val metaAdsTrackingStripEnabled: Boolean = true,
-    val microsoftAdsTrackingStripEnabled: Boolean = true,
-    val tiktokAdsTrackingStripEnabled: Boolean = true,
-    val twitterAdsTrackingStripEnabled: Boolean = true,
-    val linkedInAdsTrackingStripEnabled: Boolean = true,
-    val pinterestAdsTrackingStripEnabled: Boolean = true,
-    val snapchatAdsTrackingStripEnabled: Boolean = true,
-    val aggressiveGoogleAdsStrippingEnabled: Boolean = false,
+    val adTracking: AdTrackingPolicy = AdTrackingPolicy(),
     val utmTrackingStripEnabled: Boolean = true
 ) {
     fun isRedirectEnabledForHost(host: String): Boolean {

@@ -156,13 +156,15 @@ class UrlCleanerCoreTest {
         val cleaned = UrlCleanerCore.clean(
             dirty,
             CleanerPolicy(
-                metaAdsTrackingStripEnabled = false,
-                microsoftAdsTrackingStripEnabled = false,
-                tiktokAdsTrackingStripEnabled = false,
-                twitterAdsTrackingStripEnabled = false,
-                linkedInAdsTrackingStripEnabled = false,
-                pinterestAdsTrackingStripEnabled = false,
-                snapchatAdsTrackingStripEnabled = false
+                adTracking = AdTrackingPolicy(
+                    metaEnabled = false,
+                    microsoftEnabled = false,
+                    tiktokEnabled = false,
+                    twitterEnabled = false,
+                    linkedInEnabled = false,
+                    pinterestEnabled = false,
+                    snapchatEnabled = false
+                )
             )
         )
         assertEquals(
@@ -183,7 +185,9 @@ class UrlCleanerCoreTest {
         val dirty = "https://example.com/path?gad_custom=123&id=9"
         val cleaned = UrlCleanerCore.clean(
             dirty,
-            CleanerPolicy(aggressiveGoogleAdsStrippingEnabled = true)
+            CleanerPolicy(
+                adTracking = AdTrackingPolicy(googleAggressiveEnabled = true)
+            )
         )
         assertEquals("https://example.com/path?id=9", cleaned)
     }
@@ -194,8 +198,10 @@ class UrlCleanerCoreTest {
         val cleaned = UrlCleanerCore.clean(
             dirty,
             CleanerPolicy(
-                googleAdsTrackingStripEnabled = false,
-                aggressiveGoogleAdsStrippingEnabled = true
+                adTracking = AdTrackingPolicy(
+                    googleEnabled = false,
+                    googleAggressiveEnabled = true
+                )
             )
         )
         assertEquals("https://example.com/path?gad_custom=123&gad_source=1&id=9", cleaned)
