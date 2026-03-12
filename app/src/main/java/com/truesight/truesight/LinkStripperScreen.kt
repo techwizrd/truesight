@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -38,10 +39,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +59,7 @@ internal fun LinkStripperApp(
     sharePayload: SharePayload?
 ) {
     val context = LocalContext.current
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val factory = remember(context) { CleanerViewModelFactory(context) }
     val cleanerViewModel: CleanerViewModel = viewModel(factory = factory)
     val uiState = cleanerViewModel.uiState
@@ -216,37 +220,48 @@ internal fun LinkStripperApp(
     }
 
     if (uiState.showActionSheet && uiState.cleanedUrl.isNotBlank()) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = cleanerViewModel::dismissActionSheet,
+            sheetState = sheetState,
             modifier = Modifier.navigationBarsPadding()
         ) {
             Column(
                 modifier = Modifier
+                    .heightIn(max = screenHeightDp * 0.85f)
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = stringResourceSafe(context, R.string.actions_title),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = stringResourceSafe(context, R.string.original_url),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Text(
-                    text = uiState.originalUrl,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = stringResourceSafe(context, R.string.actions_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = stringResourceSafe(context, R.string.original_url),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = uiState.originalUrl,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    HorizontalDivider()
+                    Text(
+                        text = stringResourceSafe(context, R.string.cleaned_url),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = uiState.cleanedUrl,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
                 HorizontalDivider()
-                Text(
-                    text = stringResourceSafe(context, R.string.cleaned_url),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Text(
-                    text = uiState.cleanedUrl,
-                    style = MaterialTheme.typography.bodyMedium
-                )
                 ResultActionsRow(
                     context = context,
                     cleanedUrl = uiState.cleanedUrl,
