@@ -120,8 +120,8 @@ class RemoteRedirectResolverTest {
 
     @Test
     fun followsRedditShortShareToCommentsPermalinkWhenPostDestinationIsInternalGallery() {
-        val shareUrl = "https://www.reddit.com/r/BestofRedditorUpdates/s/ae0Q4m65Hh"
-        val permalink = "https://www.reddit.com/r/BestofRedditorUpdates/comments/1r6eevy/my_husband_32m_is_insisting_that_we_impregnate/"
+        val shareUrl = "https://www.reddit.com/r/test/s/ae0Q4m65Hh"
+        val permalink = "https://www.reddit.com/r/test/comments/1r6eevy/example-post/"
         val redirects = mapOf(shareUrl to permalink)
 
         val jsonBody = """

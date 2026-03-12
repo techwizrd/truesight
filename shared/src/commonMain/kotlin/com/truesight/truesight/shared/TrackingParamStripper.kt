@@ -17,7 +17,11 @@ object TrackingParamStripper {
         "ref_src",
         "mkt_tok",
         "s_cid",
-        "cmpid"
+        "cmpid",
+        "ad_name",
+        "adset_name",
+        "campaign_id",
+        "ad_id"
     )
 
     private val trackingPrefixes = listOf(
@@ -73,6 +77,12 @@ object TrackingParamStripper {
     private val redfinHostTrackingKeys = setOf("riftinfo", "rf_source", "rf_referrer")
     private val redditHostTrackingKeys = setOf("share_id", "rdt")
     private val mediumHostTrackingKeys = setOf("source", "sk")
+    private val prefixedAdCampaignSuffixes = listOf(
+        "_ad_name",
+        "_adset_name",
+        "_campaign_id",
+        "_ad_id"
+    )
 
     private data class StripContext(
         val isAmazonHost: Boolean,
@@ -172,7 +182,11 @@ object TrackingParamStripper {
             return true
         }
 
-        if (context.stripUtm && key.startsWith("utm_")) {
+        if (context.stripUtm && isUtmLikeKey(key)) {
+            return true
+        }
+
+        if (endsWithAny(key, prefixedAdCampaignSuffixes)) {
             return true
         }
 
@@ -236,6 +250,19 @@ object TrackingParamStripper {
 
     private fun startsWithAny(key: String, prefixes: List<String>): Boolean {
         return prefixes.any { prefix -> key.startsWith(prefix) }
+    }
+
+    private fun endsWithAny(key: String, suffixes: List<String>): Boolean {
+        return suffixes.any { suffix -> key.endsWith(suffix) }
+    }
+
+    private fun isUtmLikeKey(key: String): Boolean {
+        if (key.startsWith("utm_")) {
+            return true
+        }
+        val marker = "_utm_"
+        val markerIndex = key.indexOf(marker)
+        return markerIndex != -1 && markerIndex + marker.length < key.length
     }
 
     private fun trimEmptyFragment(url: String): String {

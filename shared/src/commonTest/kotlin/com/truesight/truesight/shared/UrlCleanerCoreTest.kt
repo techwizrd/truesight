@@ -76,10 +76,10 @@ class UrlCleanerCoreTest {
 
     @Test
     fun stripsRedditShareParamsFromPermalinks() {
-        val dirty = "https://www.reddit.com/r/BestofRedditorUpdates/comments/1r6eevy/my_husband_32m_is_insisting_that_we_impregnate/?share_id=GEbCOYXAewJQ0u9cvWf5V&rdt=12345&id=9"
+        val dirty = "https://www.reddit.com/r/test/comments/abc123/example-post/?share_id=GEbCOYXAewJQ0u9cvWf5V&rdt=12345&id=9"
         val cleaned = UrlCleanerCore.clean(dirty)
         assertEquals(
-            "https://www.reddit.com/r/BestofRedditorUpdates/comments/1r6eevy/my_husband_32m_is_insisting_that_we_impregnate/?id=9",
+            "https://www.reddit.com/r/test/comments/abc123/example-post/?id=9",
             cleaned
         )
     }
@@ -205,5 +205,22 @@ class UrlCleanerCoreTest {
             )
         )
         assertEquals("https://example.com/path?gad_custom=123&gad_source=1&id=9", cleaned)
+    }
+
+    @Test
+    fun stripsPrefixedUtmAndAdCampaignKeysGlobally() {
+        val dirty = "https://shop.example/product-item?ad_name=x&adset_name=y&omega_utm_source=facebook&omega_utm_medium=instagram_reels&omega_utm_campaign=spring&omega_ad_name=a&omega_adset_name=b&campaign_id=6981051624780&ad_id=6981051724980&variant=12345"
+        val cleaned = UrlCleanerCore.clean(dirty)
+        assertEquals("https://shop.example/product-item?variant=12345", cleaned)
+    }
+
+    @Test
+    fun keepsPrefixedUtmWhenUtmToggleIsDisabled() {
+        val dirty = "https://example.com/path?omega_utm_source=facebook&utm_medium=social&id=9"
+        val cleaned = UrlCleanerCore.clean(
+            dirty,
+            CleanerPolicy(utmTrackingStripEnabled = false)
+        )
+        assertEquals("https://example.com/path?omega_utm_source=facebook&utm_medium=social&id=9", cleaned)
     }
 }
