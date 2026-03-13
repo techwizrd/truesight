@@ -15,6 +15,8 @@ internal data class ShareOverlayUiState(
     val isSheetOpen: Boolean = true,
     val originalUrl: String? = null,
     val cleanedUrl: String? = null,
+    val paramsRemoved: Int = 0,
+    val redirectsFollowed: Int = 0,
     val hasUrlInInput: Boolean? = null
 )
 
@@ -36,30 +38,40 @@ internal class ShareOverlayViewModel(
                 return@launch
             }
 
-            uiState = uiState.copy(hasUrlInInput = firstUrl != null, originalUrl = firstUrl, cleanedUrl = null)
+            uiState = uiState.copy(
+                hasUrlInInput = firstUrl != null,
+                originalUrl = firstUrl,
+                cleanedUrl = null,
+                paramsRemoved = 0,
+                redirectsFollowed = 0
+            )
 
             if (firstUrl == null) {
                 return@launch
             }
 
-            val cleaned = cleanWithMostRecentPolicy(firstUrl)
+            val cleanResult = cleanWithMostRecentPolicy(firstUrl)
             if (requestTracker.isLatest(requestId)) {
-                uiState = uiState.copy(cleanedUrl = cleaned)
+                uiState = uiState.copy(
+                    cleanedUrl = cleanResult.cleanedUrl,
+                    paramsRemoved = cleanResult.paramsRemoved,
+                    redirectsFollowed = cleanResult.redirectsFollowed
+                )
             }
         }
     }
 
-    private suspend fun cleanWithMostRecentPolicy(firstUrl: String): String {
+    private suspend fun cleanWithMostRecentPolicy(firstUrl: String): UrlCleaner.CleanedLinkResult {
         val versionProvider = settingsStore as? PolicyVersionProvider
         val initialVersion = versionProvider?.currentVersion()
 
         val initialPolicy = settingsStore.loadPolicy()
-        var cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, initialPolicy)
+        var cleaned = UrlCleaner.cleanWithResolvedRedirectsWithStats(firstUrl, initialPolicy)
 
         if (initialVersion != null && versionProvider.currentVersion() != initialVersion) {
             val refreshedPolicy = settingsStore.loadPolicy()
             if (refreshedPolicy != initialPolicy) {
-                cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, refreshedPolicy)
+                cleaned = UrlCleaner.cleanWithResolvedRedirectsWithStats(firstUrl, refreshedPolicy)
             }
         }
 

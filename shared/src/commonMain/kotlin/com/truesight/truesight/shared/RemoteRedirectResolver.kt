@@ -3,6 +3,11 @@ package com.truesight.truesight.shared
 object RemoteRedirectResolver {
     enum class LogLevel { DEBUG, WARN }
 
+    data class FollowResult(
+        val resolvedUrl: String,
+        val redirectCount: Int
+    )
+
     fun interface RedirectNetworkClient {
         fun fetchRedirectLocation(url: String): String?
     }
@@ -18,20 +23,38 @@ object RemoteRedirectResolver {
         bodyFetcher: BodyFetcher,
         logger: (level: LogLevel, message: String, error: Throwable?) -> Unit = { _, _, _ -> }
     ): String {
+        return followWithResult(url, policy, networkClient, bodyFetcher, logger).resolvedUrl
+    }
+
+    fun followWithResult(
+        url: String,
+        policy: CleanerPolicy,
+        networkClient: RedirectNetworkClient,
+        bodyFetcher: BodyFetcher,
+        logger: (level: LogLevel, message: String, error: Throwable?) -> Unit = { _, _, _ -> }
+    ): FollowResult {
         if (!shouldFollow(url, policy)) {
             logger(LogLevel.DEBUG, "Skipping remote follow for url=$url", null)
-            return url
+            return FollowResult(resolvedUrl = url, redirectCount = 0)
         }
 
         logger(LogLevel.DEBUG, "Starting remote follow for url=$url", null)
-        val followed = followRedirectChain(url, networkClient, logger)
+        val chainResult = followRedirectChain(url, networkClient, logger)
+        val followed = chainResult.resolvedUrl
         logger(LogLevel.DEBUG, "Redirect chain resolved to=$followed", null)
 
         val redditDestination = resolveRedditDestination(followed, bodyFetcher, logger)
         val finalUrl = redditDestination ?: followed
+        val redditRedirectCount = if (redditDestination != null && redditDestination != followed) 1 else 0
+        val redirectCount = chainResult.redirectCount + redditRedirectCount
         logger(LogLevel.DEBUG, "Final resolved url=$finalUrl", null)
-        return finalUrl
+        return FollowResult(resolvedUrl = finalUrl, redirectCount = redirectCount)
     }
+
+    private data class RedirectChainResult(
+        val resolvedUrl: String,
+        val redirectCount: Int
+    )
 
     private fun shouldFollow(url: String, policy: CleanerPolicy): Boolean {
         val host = UrlPartsParser.parse(url)?.host ?: return false
@@ -49,20 +72,23 @@ object RemoteRedirectResolver {
         url: String,
         networkClient: RedirectNetworkClient,
         logger: (level: LogLevel, message: String, error: Throwable?) -> Unit
-    ): String {
+    ): RedirectChainResult {
         var current = url
+        var redirectCount = 0
         repeat(5) { hop ->
-            val location = networkClient.fetchRedirectLocation(current) ?: return current
+            val location = networkClient.fetchRedirectLocation(current)
+                ?: return RedirectChainResult(resolvedUrl = current, redirectCount = redirectCount)
             val next = resolveLocation(current, location)
             if (next == current) {
                 logger(LogLevel.DEBUG, "Hop ${hop + 1}: redirect target same as current, stopping at=$current", null)
-                return current
+                return RedirectChainResult(resolvedUrl = current, redirectCount = redirectCount)
             }
             logger(LogLevel.DEBUG, "Hop ${hop + 1}: $current -> $next", null)
             current = next
+            redirectCount += 1
         }
         logger(LogLevel.DEBUG, "Reached max redirect hops at=$current", null)
-        return current
+        return RedirectChainResult(resolvedUrl = current, redirectCount = redirectCount)
     }
 
     private fun resolveLocation(baseUrl: String, location: String): String {

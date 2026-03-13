@@ -3,6 +3,15 @@
     <string name="paste_hint">Paste a link or text with a link</string>
     <string name="clean_link">Clean Link</string>
     <string name="actions_title">Clean link ready</string>
+    <string name="cleaned_summary_template">Removed %1$s and %2$s</string>
+    <plurals name="params_removed_count">
+        <item quantity="one">%d param</item>
+        <item quantity="other">%d params</item>
+    </plurals>
+    <plurals name="redirects_followed_count">
+        <item quantity="one">%d redirect</item>
+        <item quantity="other">%d redirects</item>
+    </plurals>
     <string name="copy">Copy</string>
     <string name="share">Share</string>
     <string name="open">Open</string>

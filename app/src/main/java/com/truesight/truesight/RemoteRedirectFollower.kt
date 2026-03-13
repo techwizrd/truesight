@@ -43,7 +43,20 @@ object RemoteRedirectFollower : RedirectFollower {
         return followIfNeeded(url, policy)
     }
 
+    data class RedirectFollowResult(
+        val resolvedUrl: String,
+        val redirectCount: Int
+    )
+
+    fun followWithResult(url: String, policy: CleanerPolicy): RedirectFollowResult {
+        return followIfNeededInternal(url, policy)
+    }
+
     fun followIfNeeded(url: String, policy: CleanerPolicy): String {
+        return followIfNeededInternal(url, policy).resolvedUrl
+    }
+
+    private fun followIfNeededInternal(url: String, policy: CleanerPolicy): RedirectFollowResult {
         val now = System.currentTimeMillis()
         val cacheKey = CacheKey(
             url = url,
@@ -56,7 +69,7 @@ object RemoteRedirectFollower : RedirectFollower {
             if (cached != null) {
                 if (cached.expiresAtMs > now) {
                     debugLog("Cache hit for url=$url")
-                    return cached.value
+                    return cached.result
                 }
 
                 redirectCache.remove(cacheKey)
@@ -79,7 +92,7 @@ object RemoteRedirectFollower : RedirectFollower {
         }
 
         return try {
-            val resolved = RemoteRedirectResolver.followIfNeeded(
+            val resolved = RemoteRedirectResolver.followWithResult(
                 url = url,
                 policy = policy,
                 networkClient = RemoteRedirectResolver.RedirectNetworkClient { requestUrl ->
@@ -97,13 +110,17 @@ object RemoteRedirectFollower : RedirectFollower {
                     }
                 }
             )
+            val result = RedirectFollowResult(
+                resolvedUrl = resolved.resolvedUrl,
+                redirectCount = resolved.redirectCount
+            )
 
-            val ttlMs = if (resolved == url) unchangedTtlMs else successTtlMs
+            val ttlMs = if (result.resolvedUrl == url) unchangedTtlMs else successTtlMs
             val cacheTime = System.currentTimeMillis()
             synchronized(cacheLock) {
                 writeCount += 1
                 redirectCache[cacheKey] = CacheEntry(
-                    value = resolved,
+                    result = result,
                     expiresAtMs = cacheTime + ttlMs
                 )
                 if (writeCount % cleanupInterval == 0) {
@@ -112,10 +129,10 @@ object RemoteRedirectFollower : RedirectFollower {
             }
 
             synchronized(inFlightEntry) {
-                inFlightEntry.complete(result = resolved)
+                inFlightEntry.complete(result = result)
             }
 
-            resolved
+            result
         } catch (error: Throwable) {
             synchronized(inFlightEntry) {
                 inFlightEntry.complete(error = error)
@@ -148,7 +165,7 @@ object RemoteRedirectFollower : RedirectFollower {
         entry: InFlightEntry,
         url: String,
         policy: CleanerPolicy
-    ): String {
+    ): RedirectFollowResult {
         return try {
             entry.await()
             val error = entry.error
@@ -159,9 +176,12 @@ object RemoteRedirectFollower : RedirectFollower {
                         inFlight.remove(cacheKey)
                     }
                 }
-                followIfNeeded(url, policy)
+                followIfNeededInternal(url, policy)
             } else {
-                entry.result ?: url
+                entry.result ?: RedirectFollowResult(
+                    resolvedUrl = url,
+                    redirectCount = 0
+                )
             }
         } catch (error: InterruptedException) {
             Thread.currentThread().interrupt()
@@ -171,7 +191,7 @@ object RemoteRedirectFollower : RedirectFollower {
                     inFlight.remove(cacheKey)
                 }
             }
-            followIfNeeded(url, policy)
+            followIfNeededInternal(url, policy)
         }
     }
 
@@ -185,7 +205,7 @@ object RemoteRedirectFollower : RedirectFollower {
     }
 
     private data class CacheEntry(
-        val value: String,
+        val result: RedirectFollowResult,
         val expiresAtMs: Long
     )
 
@@ -193,7 +213,7 @@ object RemoteRedirectFollower : RedirectFollower {
         private val done = AtomicBoolean(false)
         private val latch = CountDownLatch(1)
 
-        var result: String? = null
+        var result: RedirectFollowResult? = null
             private set
         var error: Throwable? = null
             private set
@@ -202,7 +222,7 @@ object RemoteRedirectFollower : RedirectFollower {
             latch.await()
         }
 
-        fun complete(result: String? = null, error: Throwable? = null) {
+        fun complete(result: RedirectFollowResult? = null, error: Throwable? = null) {
             if (!done.compareAndSet(false, true)) {
                 return
             }

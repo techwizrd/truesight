@@ -128,7 +128,9 @@ private fun ShareOverlaySheet(
                         ShareSheetContentState.Ready -> {
                             ReadyContent(
                                 originalUrl = uiState.originalUrl ?: return@Crossfade,
-                                cleanedUrl = uiState.cleanedUrl.orEmpty()
+                                cleanedUrl = uiState.cleanedUrl.orEmpty(),
+                                paramsRemoved = uiState.paramsRemoved,
+                                redirectsFollowed = uiState.redirectsFollowed
                             )
                         }
                     }
@@ -234,14 +236,23 @@ private fun CleaningContent() {
 }
 
 @Composable
-private fun ReadyContent(originalUrl: String, cleanedUrl: String) {
+private fun ReadyContent(
+    originalUrl: String,
+    cleanedUrl: String,
+    paramsRemoved: Int,
+    redirectsFollowed: Int
+) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = stringResource(R.string.actions_title),
+                text = cleanedSummaryText(
+                    context = LocalContext.current,
+                    paramsRemoved = paramsRemoved,
+                    redirectsFollowed = redirectsFollowed
+                ),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(

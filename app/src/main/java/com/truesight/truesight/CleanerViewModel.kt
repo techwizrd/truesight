@@ -28,6 +28,8 @@ internal data class CleanerUiState(
     val status: CleanerStatus = CleanerStatus.ManualHint,
     val originalUrl: String = "",
     val cleanedUrl: String = "",
+    val paramsRemoved: Int = 0,
+    val redirectsFollowed: Int = 0,
     val showActionSheet: Boolean = false,
     val policy: CleanerPolicy = CleanerPolicy(),
     val currentScreen: AppScreen = AppScreen.Cleaner,
@@ -87,18 +89,26 @@ internal class CleanerViewModel(
                 if (requestTracker.isLatest(requestId)) {
                     uiState = uiState.copy(
                         status = CleanerStatus.NoUrl,
+                        paramsRemoved = 0,
+                        redirectsFollowed = 0,
                         isCleaning = false
                     )
                 }
                 return@launch
             }
 
-            val cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, uiState.policy)
+            val cleanResult = UrlCleaner.cleanWithResolvedRedirectsWithStats(firstUrl, uiState.policy)
             if (requestTracker.isLatest(requestId)) {
                 uiState = uiState.copy(
                     originalUrl = firstUrl,
-                    cleanedUrl = cleaned,
-                    status = if (cleaned == firstUrl) CleanerStatus.AlreadyClean else CleanerStatus.Cleaned,
+                    cleanedUrl = cleanResult.cleanedUrl,
+                    paramsRemoved = cleanResult.paramsRemoved,
+                    redirectsFollowed = cleanResult.redirectsFollowed,
+                    status = if (cleanResult.cleanedUrl == firstUrl) {
+                        CleanerStatus.AlreadyClean
+                    } else {
+                        CleanerStatus.Cleaned
+                    },
                     showActionSheet = true,
                     isCleaning = false
                 )

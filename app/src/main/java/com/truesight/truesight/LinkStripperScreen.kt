@@ -177,7 +177,11 @@ private fun CleanerActionSheet(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = stringResourceSafe(context, R.string.actions_title),
+                    text = cleanedSummaryText(
+                        context = context,
+                        paramsRemoved = uiState.paramsRemoved,
+                        redirectsFollowed = uiState.redirectsFollowed
+                    ),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
@@ -670,4 +674,10 @@ private fun statusTextFor(context: Context, status: CleanerStatus): String {
     }
 }
 
-private fun stringResourceSafe(context: Context, resId: Int): String = context.getString(resId)
+private fun stringResourceSafe(context: Context, resId: Int, vararg formatArgs: Any): String {
+    return if (formatArgs.isEmpty()) {
+        context.getString(resId)
+    } else {
+        context.getString(resId, *formatArgs)
+    }
+}
