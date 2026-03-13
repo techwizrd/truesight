@@ -1,66 +1,59 @@
 # Truesight
 
-Privacy-focused link cleaner for Android and iOS, powered by a Kotlin Multiplatform (KMP) shared core.
+[![CI](https://img.shields.io/github/actions/workflow/status/techwizrd/truesight/ci.yml?branch=main&label=CI)](https://github.com/techwizrd/truesight/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/techwizrd/truesight)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
+[![Android](https://img.shields.io/badge/Android-Jetpack%20Compose-3DDC84?logo=android)](https://developer.android.com/jetpack/compose)
 
-Truesight extracts links from shared or pasted text, unwraps redirect links, removes tracking parameters, and gives quick actions to share/copy/open the cleaned URL.
+Privacy-focused link cleaner for Android and iOS, powered by a Kotlin Multiplatform shared core.
 
-## Table of Contents
+Truesight takes messy shared links, unwraps redirect layers, strips tracking parameters, and gives fast actions to copy/share/open the clean URL.
 
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Quickstart](#quickstart)
-- [Development Workflow](#development-workflow)
-- [Configuration Notes](#configuration-notes)
-- [Contributing](#contributing)
-- [License](#license)
+## Why Truesight
+
+- Reduce link tracking clutter before sharing links with others.
+- Keep links readable and easier to trust.
+- Use one cleaner engine across Android and iOS.
+- Customize behavior by domain and tracking source.
+
+## Example
+
+Input:
+
+```text
+https://www.google.com/url?q=https%3A%2F%2Fexample.com%2Farticle%3Futm_source%3Dnewsletter%26id%3D42&sa=D
+```
+
+Output:
+
+```text
+https://example.com/article?id=42
+```
 
 ## Features
 
-- Extracts the first URL from arbitrary text.
+- Extracts the first URL from pasted/shared text.
 - Unwraps common redirect wrappers (Google, Reddit, Facebook, Amazon, AMP cache variants).
-- Follows selected remote redirects (Google Share, Reddit, `amzn.to`, `a.co`) before sanitization.
-- Reddit-aware resolution preserves canonical discussion links:
-  - follows Reddit short/share links (`/s/...`) to their comments permalinks
-  - keeps text/self and internal gallery/media posts on the Reddit permalink
-  - resolves to external destinations only for external link posts
-- Removes common tracking query parameters (`utm_*`, click IDs, etc.).
-- Domain-specific cleaning behavior, including:
-  - Instagram share params
-  - Medium tracking params (`source`, `sk`)
-  - Amazon tracking/affiliate params (with optional affiliate-tag preservation)
-  - Reddit share params (`share_id`, `rdt`)
-  - Zillow and Redfin tracking params
+- Follows selected remote redirects (`share.google.com`, Reddit, `amzn.to`, `a.co`) before sanitization.
+- Removes tracking query params (`utm_*`, click IDs, ad campaign params, host-specific trackers).
+- Reddit-aware behavior:
+  - resolves short/share links to canonical comment permalinks
+  - preserves Reddit permalinks for self/internal media posts
+  - resolves to destination URLs only for external link posts
+- Domain-aware stripping for Amazon, Instagram, Medium, Reddit, Zillow, Redfin, and more.
 - Optional Twitter/X to Nitter rewrite.
-- Per-domain policy controls for:
-  - redirect/unwrap behavior
-  - parameter stripping behavior
-- Global UTM stripping with a dedicated settings toggle:
-  - removes `utm_*` params on all hosts when enabled (default)
-  - preserves `utm_*` params when disabled
-- Android share-overlay flow for fast cleaning from other apps.
-- KMP shared cleaner core with iOS adapter scaffolding.
+- Android share-overlay for one-step cleaning from other apps.
+- Per-domain and per-vendor policy controls in Settings.
 
-## Project Structure
-
-- `app/` - Android app (Jetpack Compose UI + Android adapters)
-- `shared/` - KMP shared cleaner engine and tests
-- `iosApp/` - iOS integration adapters and setup notes
-- `config/detekt/` - Detekt configuration
-- `.github/workflows/ci.yml` - CI verification workflow
-
-## Quickstart
-
-- Jump to: [Prerequisites](#prerequisites) | [First-time setup](#first-time-setup-new-machine) | [Build Android debug APK](#build-android-debug-apk) | [Run tests](#run-tests) | [Run lint profile](#run-lint-profile)
+## New Here? Start in 2 Minutes
 
 ### Prerequisites
 
 - [Android Studio (latest stable)](https://developer.android.com/studio)
-- [JDK 17 (Temurin recommended)](https://adoptium.net/temurin/releases/?version=17)
-- Android SDK Platform 36 + Build-Tools (via Android Studio SDK Manager)
+- [JDK 17](https://adoptium.net/temurin/releases/?version=17)
+- Android SDK Platform 36 + Build-Tools
 
-### First-time setup (new machine)
-
-1. Verify local tooling:
+### First-time setup
 
 ```bash
 java -version
@@ -68,106 +61,71 @@ java -version
 adb version
 ```
 
-2. Open this project in [Android Studio](https://developer.android.com/studio) and let Gradle sync/download dependencies.
-3. If Android Studio does not auto-detect your SDK, set `sdk.dir` in `local.properties`:
+Open this project in Android Studio and let Gradle sync.
+
+If needed, set SDK path in `local.properties`:
 
 ```properties
 sdk.dir=/absolute/path/to/Android/Sdk
 ```
 
-### Build Android debug APK
+### Build and run
 
 ```bash
 ./gradlew :app:assembleDebug
-```
-
-### Install to connected device/emulator
-
-```bash
 ./gradlew :app:installDebug
 ```
 
-### Run tests
-
-```bash
-./gradlew testDebugUnitTest :shared:test
-```
-
-### Run lint profile
-
-```bash
-./gradlew lintAll
-```
-
-`lintAll` currently runs:
-
-- `:app:ktlintCheck`
-- `:shared:ktlintCheck`
-- `:app:detekt`
-- `:shared:detekt`
-- `:app:lintDebug`
-
-### Helpful links
-
-- [Android Emulator setup](https://developer.android.com/studio/run/emulator)
-- [ADB and device debugging](https://developer.android.com/tools/adb)
-- [Kotlin Multiplatform docs](https://kotlinlang.org/docs/multiplatform.html)
-- [iOS integration guide](iosApp/README.md)
-- [CI workflow](.github/workflows/ci.yml)
-
-## Development Workflow
-
-- Format Kotlin files:
-
-```bash
-./gradlew :app:ktlintFormat :shared:ktlintFormat
-```
-
-- Full local verification before PR:
+### Verify locally before PR
 
 ```bash
 ./gradlew lintAll testDebugUnitTest :shared:test
 ```
 
-CI runs equivalent checks on pull requests.
+## Project Structure
 
-## Configuration Notes
+- `app/` - Android app (Jetpack Compose UI and platform adapters)
+- `shared/` - Kotlin Multiplatform cleaner core + tests
+- `iosApp/` - iOS bridge/adapters and setup notes
+- `config/detekt/` - detekt rules
+- `.github/workflows/ci.yml` - CI pipeline
 
-- Android entry points:
-  - `MainActivity` for normal app flow
-  - `ShareOverlayActivity` for share-sheet integration (`text/plain`)
-- Shared cleaner pipeline and policy live in `shared/src/commonMain`.
-- iOS integration instructions are in [iosApp/README.md](iosApp/README.md).
+## Architecture at a Glance
+
+- `UrlCleanerCore` in `shared/` owns clean-link business logic.
+- Android and iOS call the same shared core and supply platform-specific redirect/policy adapters.
+- UI screens (`MainActivity`, `ShareOverlayActivity`) are thin layers over ViewModels + shared cleaner behavior.
 
 ## Contributing
 
-Contributions are welcome.
+Contributions are welcome and appreciated.
+
+### Good first contributions
+
+- add/expand cleaner test cases for real-world URL patterns
+- improve settings UX copy and help text
+- improve iOS integration ergonomics and docs
+- performance and battery optimizations in redirect handling
 
 ### How to contribute
 
-1. Fork the repository.
-2. Create a feature branch (`feat/...` or `fix/...`).
-3. Make focused changes with tests where practical.
-4. Run local verification:
+1. Fork and create a branch (`feat/...` or `fix/...`).
+2. Make focused changes with tests when practical.
+3. Run:
 
 ```bash
 ./gradlew lintAll testDebugUnitTest :shared:test
 ```
 
-5. Open a pull request with:
-   - a clear problem statement
-   - a concise change summary
-   - test/verification notes
-   - screenshots or screen recordings for UI changes
+4. Open a PR with problem, solution, and verification notes.
 
-### Reporting bugs / requesting features
+## Helpful Links
 
-- Open an issue with:
-  - expected behavior
-  - actual behavior
-  - reproduction steps
-  - device/OS details when relevant
+- [iOS integration guide](iosApp/README.md)
+- [CI workflow](.github/workflows/ci.yml)
+- [Kotlin Multiplatform docs](https://kotlinlang.org/docs/multiplatform.html)
+- [Android Emulator setup](https://developer.android.com/studio/run/emulator)
 
 ## License
 
-This project is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
+Licensed under Apache License 2.0. See [`LICENSE`](LICENSE).
