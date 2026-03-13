@@ -329,7 +329,10 @@ private fun ResultCard(originalUrl: String, cleanedUrl: String) {
                 text = stringResource(R.string.original_url),
                 style = MaterialTheme.typography.labelLarge
             )
-            Text(text = originalUrl, style = MaterialTheme.typography.bodySmall)
+            ScrollableUrlText(
+                text = originalUrl,
+                style = MaterialTheme.typography.bodySmall
+            )
             HorizontalDivider()
             Text(
                 text = stringResource(R.string.cleaned_url),
