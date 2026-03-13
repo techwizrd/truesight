@@ -75,36 +75,10 @@ internal fun LinkStripperApp(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = if (uiState.currentScreen == AppScreen.Cleaner) {
-                            stringResourceSafe(context, R.string.app_name)
-                        } else {
-                            stringResourceSafe(context, R.string.cleaning_preferences_title)
-                        }
-                    )
-                },
-                navigationIcon = {
-                    if (uiState.currentScreen == AppScreen.Settings) {
-                        IconButton(onClick = cleanerViewModel::backToCleaner) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResourceSafe(context, R.string.cd_back_to_cleaner)
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    if (uiState.currentScreen == AppScreen.Cleaner) {
-                        IconButton(onClick = cleanerViewModel::openSettings) {
-                            Icon(
-                                imageVector = Icons.Filled.Settings,
-                                contentDescription = stringResourceSafe(context, R.string.cd_open_settings)
-                            )
-                        }
-                    }
-                }
+            CleanerTopBar(
+                currentScreen = uiState.currentScreen,
+                onOpenSettings = cleanerViewModel::openSettings,
+                onBackToCleaner = cleanerViewModel::backToCleaner
             )
         }
     ) { innerPadding ->
@@ -115,157 +89,229 @@ internal fun LinkStripperApp(
         ) {
             Crossfade(targetState = uiState.currentScreen, label = "app-screen") { screen ->
                 when (screen) {
-                    AppScreen.Cleaner -> {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                                Column(
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .animateContentSize(),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = stringResourceSafe(context, R.string.manual_mode_hint),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    AssistChip(
-                                        onClick = {},
-                                        enabled = false,
-                                        label = {
-                                            Crossfade(targetState = uiState.status, label = "status-chip") { status ->
-                                                Text(
-                                                    text = statusTextFor(context, status),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            }
-                                        }
-                                    )
-                                    if (uiState.isCleaning) {
-                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                                    }
-                                }
-                            }
-
-                            Text(
-                                text = stringResourceSafe(context, R.string.input_label),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-
-                            OutlinedTextField(
-                                value = uiState.inputText,
-                                onValueChange = cleanerViewModel::onInputTextChanged,
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text(text = stringResourceSafe(context, R.string.input_label)) },
-                                placeholder = { Text(text = stringResourceSafe(context, R.string.paste_hint)) },
-                                minLines = 3
-                            )
-
-                            Button(
-                                onClick = cleanerViewModel::cleanFromCurrentInput,
-                                enabled = uiState.inputText.isNotBlank() && !uiState.isCleaning,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(text = stringResourceSafe(context, R.string.clean_link))
-                            }
-
-                            AnimatedVisibility(
-                                visible = uiState.cleanedUrl.isNotBlank(),
-                                enter = fadeIn() + expandVertically(),
-                                exit = fadeOut() + shrinkVertically()
-                            ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    ResultCard(
-                                        originalUrl = uiState.originalUrl,
-                                        cleanedUrl = uiState.cleanedUrl
-                                    )
-                                    ResultActionsRow(
-                                        context = context,
-                                        cleanedUrl = uiState.cleanedUrl,
-                                        onClose = cleanerViewModel::dismissActionSheet
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    AppScreen.Settings -> {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    CleaningPreferencesCard(
-                                        policy = uiState.policy,
-                                        onPolicyChanged = cleanerViewModel::onPolicyChanged
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AppScreen.Cleaner -> CleanerScreenContent(uiState = uiState, cleanerViewModel = cleanerViewModel)
+                    AppScreen.Settings -> SettingsScreenContent(uiState = uiState, cleanerViewModel = cleanerViewModel)
                 }
             }
         }
     }
 
-    if (uiState.showActionSheet && uiState.cleanedUrl.isNotBlank()) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = cleanerViewModel::dismissActionSheet,
-            sheetState = sheetState,
-            modifier = Modifier.navigationBarsPadding()
+    CleanerActionSheet(
+        uiState = uiState,
+        maxSheetHeight = screenHeightDp * 0.85f,
+        onDismiss = cleanerViewModel::dismissActionSheet
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CleanerTopBar(
+    currentScreen: AppScreen,
+    onOpenSettings: () -> Unit,
+    onBackToCleaner: () -> Unit
+) {
+    val context = LocalContext.current
+
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = if (currentScreen == AppScreen.Cleaner) {
+                    stringResourceSafe(context, R.string.app_name)
+                } else {
+                    stringResourceSafe(context, R.string.cleaning_preferences_title)
+                }
+            )
+        },
+        navigationIcon = {
+            if (currentScreen == AppScreen.Settings) {
+                IconButton(onClick = onBackToCleaner) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResourceSafe(context, R.string.cd_back_to_cleaner)
+                    )
+                }
+            }
+        },
+        actions = {
+            if (currentScreen == AppScreen.Cleaner) {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = stringResourceSafe(context, R.string.cd_open_settings)
+                    )
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CleanerActionSheet(
+    uiState: CleanerUiState,
+    maxSheetHeight: androidx.compose.ui.unit.Dp,
+    onDismiss: () -> Unit
+) {
+    if (!uiState.showActionSheet || uiState.cleanedUrl.isBlank()) {
+        return
+    }
+
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.navigationBarsPadding()
+    ) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = maxSheetHeight)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .heightIn(max = screenHeightDp * 0.85f)
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp),
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResourceSafe(context, R.string.actions_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = stringResourceSafe(context, R.string.original_url),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = uiState.originalUrl,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    HorizontalDivider()
-                    Text(
-                        text = stringResourceSafe(context, R.string.cleaned_url),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = uiState.cleanedUrl,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                Text(
+                    text = stringResourceSafe(context, R.string.actions_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResourceSafe(context, R.string.original_url),
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    text = uiState.originalUrl,
+                    style = MaterialTheme.typography.bodySmall
+                )
                 HorizontalDivider()
+                Text(
+                    text = stringResourceSafe(context, R.string.cleaned_url),
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    text = uiState.cleanedUrl,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            HorizontalDivider()
+            ResultActionsRow(
+                context = context,
+                cleanedUrl = uiState.cleanedUrl,
+                onClose = onDismiss
+            )
+        }
+    }
+}
+
+@Composable
+private fun CleanerScreenContent(
+    uiState: CleanerUiState,
+    cleanerViewModel: CleanerViewModel
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .animateContentSize(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = stringResourceSafe(context, R.string.manual_mode_hint),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                AssistChip(
+                    onClick = {},
+                    enabled = false,
+                    label = {
+                        Crossfade(targetState = uiState.status, label = "status-chip") { status ->
+                            Text(
+                                text = statusTextFor(context, status),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                )
+                if (uiState.isCleaning) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+
+        Text(
+            text = stringResourceSafe(context, R.string.input_label),
+            style = MaterialTheme.typography.titleSmall
+        )
+
+        OutlinedTextField(
+            value = uiState.inputText,
+            onValueChange = cleanerViewModel::onInputTextChanged,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(text = stringResourceSafe(context, R.string.input_label)) },
+            placeholder = { Text(text = stringResourceSafe(context, R.string.paste_hint)) },
+            minLines = 3
+        )
+
+        Button(
+            onClick = cleanerViewModel::cleanFromCurrentInput,
+            enabled = uiState.inputText.isNotBlank() && !uiState.isCleaning,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = stringResourceSafe(context, R.string.clean_link))
+        }
+
+        AnimatedVisibility(
+            visible = uiState.cleanedUrl.isNotBlank(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ResultCard(
+                    originalUrl = uiState.originalUrl,
+                    cleanedUrl = uiState.cleanedUrl
+                )
                 ResultActionsRow(
                     context = context,
                     cleanedUrl = uiState.cleanedUrl,
                     onClose = cleanerViewModel::dismissActionSheet
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsScreenContent(
+    uiState: CleanerUiState,
+    cleanerViewModel: CleanerViewModel
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CleaningPreferencesCard(
+                    policy = uiState.policy,
+                    onPolicyChanged = cleanerViewModel::onPolicyChanged
                 )
             }
         }
@@ -400,89 +446,34 @@ private fun CleaningPreferencesCard(
             text = stringResource(R.string.settings_ad_tracking_title),
             style = MaterialTheme.typography.titleSmall
         )
-        AdVendorSettingsSection(titleResId = R.string.vendor_google_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_google_ads,
-                checked = policy.adTracking.googleEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(
-                        policy.copy(adTracking = policy.adTracking.copy(googleEnabled = it))
+        adVendorSections.forEach { section ->
+            AdVendorSettingsSection(titleResId = section.titleResId) {
+                SettingsToggleRow(
+                    labelResId = section.toggleResId,
+                    checked = section.isEnabled(policy.adTracking),
+                    onCheckedChange = { enabled ->
+                        onPolicyChanged(
+                            policy.copy(
+                                adTracking = section.update(policy.adTracking, enabled)
+                            )
+                        )
+                    }
+                )
+                if (section.extraToggle != null) {
+                    SettingsToggleRow(
+                        labelResId = section.extraToggle.labelResId,
+                        checked = section.extraToggle.isEnabled(policy.adTracking),
+                        enabled = section.extraToggle.enabled(policy.adTracking),
+                        onCheckedChange = { enabled ->
+                            onPolicyChanged(
+                                policy.copy(
+                                    adTracking = section.extraToggle.update(policy.adTracking, enabled)
+                                )
+                            )
+                        }
                     )
                 }
-            )
-            SettingsToggleRow(
-                labelResId = R.string.setting_aggressive_google_ads_stripping,
-                checked = policy.adTracking.googleAggressiveEnabled,
-                enabled = policy.adTracking.googleEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(
-                        policy.copy(adTracking = policy.adTracking.copy(googleAggressiveEnabled = it))
-                    )
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_meta_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_meta_ads,
-                checked = policy.adTracking.metaEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(metaEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_microsoft_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_microsoft_ads,
-                checked = policy.adTracking.microsoftEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(microsoftEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_tiktok_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_tiktok_ads,
-                checked = policy.adTracking.tiktokEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(tiktokEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_twitter_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_twitter_ads,
-                checked = policy.adTracking.twitterEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(twitterEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_linkedin_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_linkedin_ads,
-                checked = policy.adTracking.linkedInEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(linkedInEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_pinterest_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_pinterest_ads,
-                checked = policy.adTracking.pinterestEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(pinterestEnabled = it)))
-                }
-            )
-        }
-        AdVendorSettingsSection(titleResId = R.string.vendor_snapchat_ads) {
-            SettingsToggleRow(
-                labelResId = R.string.setting_strip_snapchat_ads,
-                checked = policy.adTracking.snapchatEnabled,
-                onCheckedChange = {
-                    onPolicyChanged(policy.copy(adTracking = policy.adTracking.copy(snapchatEnabled = it)))
-                }
-            )
+            }
         }
     }
 }
@@ -556,6 +547,21 @@ private data class DomainPolicySection(
     val showAmazonAffiliateToggle: Boolean = false
 )
 
+private data class AdVendorSection(
+    val titleResId: Int,
+    val toggleResId: Int,
+    val isEnabled: (AdTrackingPolicy) -> Boolean,
+    val update: (AdTrackingPolicy, Boolean) -> AdTrackingPolicy,
+    val extraToggle: AdVendorExtraToggle? = null
+)
+
+private data class AdVendorExtraToggle(
+    val labelResId: Int,
+    val isEnabled: (AdTrackingPolicy) -> Boolean,
+    val enabled: (AdTrackingPolicy) -> Boolean,
+    val update: (AdTrackingPolicy, Boolean) -> AdTrackingPolicy
+)
+
 private val domainPolicySections = listOf(
     DomainPolicySection(
         titleResId = R.string.domain_google_share,
@@ -592,6 +598,63 @@ private val domainPolicySections = listOf(
         stripEnabled = { it.ampCacheStripEnabled },
         updateRedirect = { policy, enabled -> policy.copy(ampCacheRedirectEnabled = enabled) },
         updateStrip = { policy, enabled -> policy.copy(ampCacheStripEnabled = enabled) }
+    )
+)
+
+private val adVendorSections = listOf(
+    AdVendorSection(
+        titleResId = R.string.vendor_google_ads,
+        toggleResId = R.string.setting_strip_google_ads,
+        isEnabled = { it.googleEnabled },
+        update = { adTracking, enabled -> adTracking.copy(googleEnabled = enabled) },
+        extraToggle = AdVendorExtraToggle(
+            labelResId = R.string.setting_aggressive_google_ads_stripping,
+            isEnabled = { it.googleAggressiveEnabled },
+            enabled = { it.googleEnabled },
+            update = { adTracking, enabled -> adTracking.copy(googleAggressiveEnabled = enabled) }
+        )
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_meta_ads,
+        toggleResId = R.string.setting_strip_meta_ads,
+        isEnabled = { it.metaEnabled },
+        update = { adTracking, enabled -> adTracking.copy(metaEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_microsoft_ads,
+        toggleResId = R.string.setting_strip_microsoft_ads,
+        isEnabled = { it.microsoftEnabled },
+        update = { adTracking, enabled -> adTracking.copy(microsoftEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_tiktok_ads,
+        toggleResId = R.string.setting_strip_tiktok_ads,
+        isEnabled = { it.tiktokEnabled },
+        update = { adTracking, enabled -> adTracking.copy(tiktokEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_twitter_ads,
+        toggleResId = R.string.setting_strip_twitter_ads,
+        isEnabled = { it.twitterEnabled },
+        update = { adTracking, enabled -> adTracking.copy(twitterEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_linkedin_ads,
+        toggleResId = R.string.setting_strip_linkedin_ads,
+        isEnabled = { it.linkedInEnabled },
+        update = { adTracking, enabled -> adTracking.copy(linkedInEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_pinterest_ads,
+        toggleResId = R.string.setting_strip_pinterest_ads,
+        isEnabled = { it.pinterestEnabled },
+        update = { adTracking, enabled -> adTracking.copy(pinterestEnabled = enabled) }
+    ),
+    AdVendorSection(
+        titleResId = R.string.vendor_snapchat_ads,
+        toggleResId = R.string.setting_strip_snapchat_ads,
+        isEnabled = { it.snapchatEnabled },
+        update = { adTracking, enabled -> adTracking.copy(snapchatEnabled = enabled) }
     )
 )
 

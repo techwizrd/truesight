@@ -34,10 +34,6 @@ class MainActivity : ComponentActivity() {
         val sharedText = extractSharedText(intent)
         sharePayload = sharedText?.let { SharePayload(id = System.nanoTime(), text = it) }
     }
-
-    private fun extractSharedText(intent: Intent?): String? {
-        return com.truesight.truesight.extractSharedText(intent)
-    }
 }
 
 internal data class SharePayload(

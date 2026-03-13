@@ -22,18 +22,17 @@ internal class ShareOverlayViewModel(
     private val settingsStore: CleanerPolicyStore
 ) : ViewModel() {
     private var resolveJob: Job? = null
-    private var latestRequestId: Long = 0
+    private val requestTracker = LatestRequestTracker()
 
     var uiState by mutableStateOf(ShareOverlayUiState())
         private set
 
     fun onSharedText(sharedText: String?) {
-        latestRequestId += 1
-        val requestId = latestRequestId
+        val requestId = requestTracker.nextRequestId()
         resolveJob?.cancel()
         resolveJob = viewModelScope.launch {
             val firstUrl = sharedText?.let(UrlExtractor::extractFirstUrl)
-            if (requestId != latestRequestId) {
+            if (!requestTracker.isLatest(requestId)) {
                 return@launch
             }
 
@@ -43,16 +42,23 @@ internal class ShareOverlayViewModel(
                 return@launch
             }
 
-            val initialPolicy = settingsStore.loadPolicy()
-            var cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, initialPolicy)
-            val refreshedPolicy = settingsStore.loadPolicy()
-            if (refreshedPolicy != initialPolicy) {
-                cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, refreshedPolicy)
-            }
-            if (requestId == latestRequestId) {
+            val cleaned = cleanWithMostRecentPolicy(firstUrl)
+            if (requestTracker.isLatest(requestId)) {
                 uiState = uiState.copy(cleanedUrl = cleaned)
             }
         }
+    }
+
+    private suspend fun cleanWithMostRecentPolicy(firstUrl: String): String {
+        val initialPolicy = settingsStore.loadPolicy()
+        var cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, initialPolicy)
+
+        val refreshedPolicy = settingsStore.loadPolicy()
+        if (refreshedPolicy != initialPolicy) {
+            cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, refreshedPolicy)
+        }
+
+        return cleaned
     }
 
     fun dismissSheet() {

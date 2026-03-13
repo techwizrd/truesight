@@ -38,7 +38,7 @@ internal class CleanerViewModel(
     private val settingsStore: CleanerPolicyStore
 ) : ViewModel() {
     private var cleaningJob: Job? = null
-    private var latestRequestId: Long = 0
+    private val requestTracker = LatestRequestTracker()
 
     var uiState by mutableStateOf(
         CleanerUiState(policy = settingsStore.loadPolicy())
@@ -78,14 +78,13 @@ internal class CleanerViewModel(
     }
 
     private fun cleanFirstUrlFromText(sourceText: String) {
-        latestRequestId += 1
-        val requestId = latestRequestId
+        val requestId = requestTracker.nextRequestId()
         cleaningJob?.cancel()
         cleaningJob = viewModelScope.launch {
             uiState = uiState.copy(isCleaning = true)
             val firstUrl = UrlExtractor.extractFirstUrl(sourceText)
             if (firstUrl == null) {
-                if (requestId == latestRequestId) {
+                if (requestTracker.isLatest(requestId)) {
                     uiState = uiState.copy(
                         status = CleanerStatus.NoUrl,
                         isCleaning = false
@@ -95,7 +94,7 @@ internal class CleanerViewModel(
             }
 
             val cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, uiState.policy)
-            if (requestId == latestRequestId) {
+            if (requestTracker.isLatest(requestId)) {
                 uiState = uiState.copy(
                     originalUrl = firstUrl,
                     cleanedUrl = cleaned,

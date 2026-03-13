@@ -3,25 +3,41 @@ build:
 
 complexity:
   LongMethod:
-    active: false
+    active: true
+    threshold: 90
   LongParameterList:
-    active: false
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 8
   TooManyFunctions:
-    active: false
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 15
+    thresholdInInterfaces: 15
+    thresholdInObjects: 20
+    thresholdInEnums: 15
 
 naming:
   FunctionNaming:
-    active: false
+    active: true
+    ignoreAnnotated:
+      - Composable
+      - Preview
   MatchingDeclarationName:
-    active: false
+    active: true
 
 exceptions:
   TooGenericExceptionCaught:
-    active: false
+    active: true
+    exceptionNames:
+      - e
+      - expected
+      - ignored
+      - _:ignored
 
 empty-blocks:
   EmptyCatchBlock:
-    active: false
+    active: true
 
 style:
   MaxLineLength:
@@ -29,13 +45,32 @@ style:
   NewLineAtEndOfFile:
     active: false
   ReturnCount:
-    active: false
+    active: true
+    max: 4
   UnusedPrivateMember:
-    active: false
+    active: true
+    ignoreAnnotated:
+      - Preview
   UnusedParameter:
-    active: false
+    active: true
 
   MagicNumber:
-    active: false
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '10'
+      - '100'
+      - '200'
+      - '299'
+      - '300'
+      - '399'
+      - '2048'
+      - '4096'
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
   WildcardImport:
-    active: false
+    active: true
