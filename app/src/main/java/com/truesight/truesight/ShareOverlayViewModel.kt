@@ -50,12 +50,17 @@ internal class ShareOverlayViewModel(
     }
 
     private suspend fun cleanWithMostRecentPolicy(firstUrl: String): String {
+        val versionProvider = settingsStore as? PolicyVersionProvider
+        val initialVersion = versionProvider?.currentVersion()
+
         val initialPolicy = settingsStore.loadPolicy()
         var cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, initialPolicy)
 
-        val refreshedPolicy = settingsStore.loadPolicy()
-        if (refreshedPolicy != initialPolicy) {
-            cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, refreshedPolicy)
+        if (initialVersion != null && versionProvider.currentVersion() != initialVersion) {
+            val refreshedPolicy = settingsStore.loadPolicy()
+            if (refreshedPolicy != initialPolicy) {
+                cleaned = UrlCleaner.cleanWithResolvedRedirects(firstUrl, refreshedPolicy)
+            }
         }
 
         return cleaned

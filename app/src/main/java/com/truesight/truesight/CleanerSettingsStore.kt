@@ -2,9 +2,15 @@ package com.truesight.truesight
 
 import android.content.Context
 import com.truesight.truesight.shared.CleanerPolicyStore
+import java.util.concurrent.atomic.AtomicLong
 
-class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
+class CleanerSettingsStore(context: Context) : CleanerPolicyStore, PolicyVersionProvider {
     private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    private val policyVersion = AtomicLong(prefs.getLong(keyPolicyVersion, 0L))
+
+    override fun currentVersion(): Long {
+        return policyVersion.get()
+    }
 
     override fun loadPolicy(): CleanerPolicy {
         return CleanerPolicy(
@@ -36,6 +42,7 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
     }
 
     override fun savePolicy(policy: CleanerPolicy) {
+        val nextVersion = policyVersion.incrementAndGet()
         prefs.edit()
             .putBoolean(keyGoogleShareRedirect, policy.googleShareRedirectEnabled)
             .putBoolean(keyGoogleShareStrip, policy.googleShareStripEnabled)
@@ -59,6 +66,7 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
             .putBoolean(keySnapchatAdsTrackingStrip, policy.adTracking.snapchatEnabled)
             .putBoolean(keyAggressiveGoogleAdsStripping, policy.adTracking.googleAggressiveEnabled)
             .putBoolean(keyUtmTrackingStrip, policy.utmTrackingStripEnabled)
+            .putLong(keyPolicyVersion, nextVersion)
             .apply()
     }
 
@@ -87,5 +95,6 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore {
         private const val keySnapchatAdsTrackingStrip = "snapchat_ads_tracking_strip_enabled"
         private const val keyAggressiveGoogleAdsStripping = "aggressive_google_ads_stripping_enabled"
         private const val keyUtmTrackingStrip = "utm_tracking_strip_enabled"
+        private const val keyPolicyVersion = "policy_version"
     }
 }

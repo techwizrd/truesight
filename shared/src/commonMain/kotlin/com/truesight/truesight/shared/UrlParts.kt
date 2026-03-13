@@ -93,34 +93,3 @@ internal fun decodeUrlValue(value: String): String {
     }
     return bytes.toByteArray().decodeToString()
 }
-
-internal fun parseQuery(rawQuery: String): Map<String, String> {
-    val params = mutableMapOf<String, String>()
-    var start = 0
-
-    while (start <= rawQuery.length) {
-        val separatorIndex = rawQuery.indexOf('&', start)
-        val end = if (separatorIndex == -1) rawQuery.length else separatorIndex
-
-        if (end > start) {
-            val equalsIndex = rawQuery.indexOf('=', start).takeIf { it in start until end }
-            val keyEnd = equalsIndex ?: end
-            val key = rawQuery.substring(start, keyEnd).lowercase()
-            if (key.isNotBlank()) {
-                val value = if (equalsIndex == null) {
-                    ""
-                } else {
-                    rawQuery.substring(equalsIndex + 1, end)
-                }
-                params[key] = value
-            }
-        }
-
-        if (separatorIndex == -1) {
-            break
-        }
-        start = separatorIndex + 1
-    }
-
-    return params
-}

@@ -1,21 +1,24 @@
 package com.truesight.truesight.shared
 
-internal class LinkSanitizationPipeline(
-    private val policy: CleanerPolicy,
-    private val resolveRedirect: (String) -> String
-) {
-    fun run(inputUrl: String): String {
+internal object LinkSanitizationPipeline {
+    fun run(
+        inputUrl: String,
+        policy: CleanerPolicy,
+        resolveRedirect: (String) -> String
+    ): String {
         if (inputUrl.isBlank()) {
             return inputUrl
         }
 
         val normalizedInput = normalize(inputUrl)
-        val sourceHost = UrlPartsParser.parse(normalizedInput)?.host
+        val parsedInput = UrlPartsParser.parse(normalizedInput)
+        val sourceHost = parsedInput?.host
         val shouldResolveRedirect = sourceHost?.let(policy::isRedirectEnabledForHost) ?: true
 
-        val unwrapped = RedirectUnwrapper.unwrap(normalizedInput, policy)
+        val unwrapped = RedirectUnwrapper.unwrap(normalizedInput, parsedInput, policy)
         val followed = if (shouldResolveRedirect) resolveRedirect(unwrapped) else unwrapped
-        val unwrappedFollowed = RedirectUnwrapper.unwrap(followed, policy)
+        val parsedFollowed = UrlPartsParser.parse(followed)
+        val unwrappedFollowed = RedirectUnwrapper.unwrap(followed, parsedFollowed, policy)
         val stripped = UrlPartsParser.parse(unwrappedFollowed)?.let { parsedFinalUrl ->
             TrackingParamStripper.strip(parsedFinalUrl, policy)
         } ?: TrackingParamStripper.strip(unwrappedFollowed, policy)

@@ -53,9 +53,14 @@ object RedirectUnwrapper {
     }
 
     fun unwrap(url: String, policy: CleanerPolicy): String {
+        return unwrap(url, UrlPartsParser.parse(url), policy)
+    }
+
+    internal fun unwrap(url: String, parsedUrl: UrlParts?, policy: CleanerPolicy): String {
         var current = url
+        var currentParts = parsedUrl
         repeat(maxDepth) {
-            val parts = UrlPartsParser.parse(current) ?: return current
+            val parts = currentParts ?: UrlPartsParser.parse(current) ?: return current
             if (!policy.isRedirectEnabledForHost(parts.host)) {
                 return current
             }
@@ -65,6 +70,7 @@ object RedirectUnwrapper {
                 return current
             }
             current = next
+            currentParts = UrlPartsParser.parse(current)
         }
         return current
     }
@@ -77,11 +83,13 @@ object RedirectUnwrapper {
         private val matches: (host: String, path: String) -> Boolean,
         private val keys: List<String>
     ) : RedirectRule {
+        private val keySet = keys.toSet()
+
         override fun tryUnwrap(parts: UrlParts): String? {
             if (!matches(parts.host, parts.path)) {
                 return null
             }
-            return unwrapFromParams(parts, keys)
+            return unwrapFromParams(parts, keySet)
         }
     }
 
@@ -118,17 +126,34 @@ object RedirectUnwrapper {
         }
     }
 
-    private fun unwrapFromParams(parts: UrlParts, keys: List<String>): String? {
-        val query = parts.rawQuery ?: return null
-        val params = parseQuery(query)
+    private fun unwrapFromParams(parts: UrlParts, keys: Set<String>): String? {
+        val rawQuery = parts.rawQuery ?: return null
+        var start = 0
 
-        for (key in keys) {
-            val value = params[key] ?: continue
-            val decoded = decodeUrlValue(value)
-            if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
-                return decoded
+        while (start <= rawQuery.length) {
+            val separatorIndex = rawQuery.indexOf('&', start)
+            val end = if (separatorIndex == -1) rawQuery.length else separatorIndex
+
+            if (end > start) {
+                val equalsIndex = rawQuery.indexOf('=', start).takeIf { it in (start + 1) until end }
+                val keyEnd = equalsIndex ?: end
+                val key = rawQuery.substring(start, keyEnd).lowercase()
+
+                if (key in keys && equalsIndex != null) {
+                    val value = rawQuery.substring(equalsIndex + 1, end)
+                    val decoded = decodeUrlValue(value)
+                    if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+                        return decoded
+                    }
+                }
             }
+
+            if (separatorIndex == -1) {
+                break
+            }
+            start = separatorIndex + 1
         }
+
         return null
     }
 

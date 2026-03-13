@@ -14,9 +14,10 @@ object UrlCleanerCore {
     }
 
     fun clean(url: String, policy: CleanerPolicy, resolveRedirect: (String) -> String): String {
-        return LinkSanitizationPipeline(
+        return LinkSanitizationPipeline.run(
+            inputUrl = url,
             policy = policy,
             resolveRedirect = resolveRedirect
-        ).run(url)
+        )
     }
 }
