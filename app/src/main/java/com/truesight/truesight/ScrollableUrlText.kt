@@ -17,13 +17,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import java.net.URI
 
 private const val URL_BOX_BACKGROUND_ALPHA = 0.35f
 private const val SCROLL_TRACK_ALPHA = 0.2f
@@ -49,8 +55,10 @@ internal fun ScrollableUrlText(
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = URL_BOX_BACKGROUND_ALPHA))
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
+        val highlightedText = rememberHighlightedUrlText(text)
+
         Text(
-            text = text,
+            text = highlightedText,
             style = style,
             modifier = Modifier
                 .fillMaxWidth()
@@ -71,6 +79,47 @@ internal fun ScrollableUrlText(
                 thumbHeight = thumbHeight,
                 thumbOffset = thumbOffset
             )
+        }
+    }
+}
+
+@Composable
+private fun rememberHighlightedUrlText(text: String): AnnotatedString {
+    val colorScheme = MaterialTheme.colorScheme
+    val baseColor = colorScheme.onSurface
+    val queryColor = colorScheme.onSurfaceVariant
+
+    return remember(text, baseColor, queryColor) {
+        val uri = runCatching { URI(text.trim()) }.getOrNull()
+        val scheme = uri?.scheme
+        val host = uri?.host
+        if (scheme.isNullOrBlank() || host.isNullOrBlank()) {
+            return@remember AnnotatedString(text)
+        }
+
+        val hostStart = text.indexOf(host)
+        if (hostStart < 0) {
+            return@remember AnnotatedString(text)
+        }
+
+        val queryStart = text.indexOf('?', hostStart)
+        val fragmentStart = text.indexOf('#', hostStart)
+        val mutedStart = listOf(queryStart, fragmentStart).filter { it >= 0 }.minOrNull() ?: text.length
+
+        buildAnnotatedString {
+            append(text)
+            addStyle(
+                style = SpanStyle(color = baseColor, fontWeight = FontWeight.SemiBold),
+                start = hostStart,
+                end = hostStart + host.length
+            )
+            if (mutedStart < text.length) {
+                addStyle(
+                    style = SpanStyle(color = queryColor),
+                    start = mutedStart,
+                    end = text.length
+                )
+            }
         }
     }
 }

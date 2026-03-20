@@ -4,11 +4,18 @@ import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,8 +31,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -42,10 +51,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,7 +101,11 @@ internal fun LinkStripperApp(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Crossfade(targetState = uiState.currentScreen, label = "app-screen") { screen ->
+            Crossfade(
+                targetState = uiState.currentScreen,
+                animationSpec = tween(durationMillis = 220),
+                label = "app-screen"
+            ) { screen ->
                 when (screen) {
                     AppScreen.Cleaner -> CleanerScreenContent(uiState = uiState, cleanerViewModel = cleanerViewModel)
                     AppScreen.Settings -> SettingsScreenContent(uiState = uiState, cleanerViewModel = cleanerViewModel)
@@ -225,35 +243,7 @@ private fun CleanerScreenContent(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .animateContentSize(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = stringResourceSafe(context, R.string.manual_mode_hint),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                AssistChip(
-                    onClick = {},
-                    enabled = false,
-                    label = {
-                        Crossfade(targetState = uiState.status, label = "status-chip") { status ->
-                            Text(
-                                text = statusTextFor(context, status),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                )
-                if (uiState.isCleaning) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-            }
-        }
+        CleaningStatusCard(uiState = uiState, context = context)
 
         Text(
             text = stringResourceSafe(context, R.string.input_label),
@@ -279,8 +269,10 @@ private fun CleanerScreenContent(
 
         AnimatedVisibility(
             visible = uiState.cleanedUrl.isNotBlank(),
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            enter = fadeIn(animationSpec = tween(durationMillis = 180)) +
+                expandVertically(animationSpec = tween(durationMillis = 220)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkVertically(animationSpec = tween(durationMillis = 180))
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 ResultCard(
@@ -291,6 +283,76 @@ private fun CleanerScreenContent(
                     context = context,
                     cleanedUrl = uiState.cleanedUrl,
                     onClose = cleanerViewModel::dismissActionSheet
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CleaningStatusCard(uiState: CleanerUiState, context: Context) {
+    val statusContainerColor by animateColorAsState(
+        targetValue = statusChipContainerColor(uiState.status, MaterialTheme.colorScheme),
+        animationSpec = tween(durationMillis = 220),
+        label = "status-chip-container"
+    )
+    val statusLabelColor by animateColorAsState(
+        targetValue = statusChipLabelColor(uiState.status, MaterialTheme.colorScheme),
+        animationSpec = tween(durationMillis = 220),
+        label = "status-chip-label"
+    )
+    val cleaningPulse by rememberInfiniteTransition(label = "cleaning-pulse").animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 850),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cleaning-alpha"
+    )
+
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .animateContentSize(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = stringResourceSafe(context, R.string.manual_mode_hint),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            AssistChip(
+                onClick = {},
+                enabled = false,
+                colors = AssistChipDefaults.assistChipColors(
+                    disabledContainerColor = statusContainerColor,
+                    disabledLabelColor = statusLabelColor
+                ),
+                label = {
+                    Crossfade(
+                        targetState = uiState.status,
+                        animationSpec = tween(durationMillis = 160),
+                        label = "status-chip"
+                    ) { status ->
+                        Text(
+                            text = statusTextFor(context, status),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            )
+            if (uiState.isCleaning) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(cleaningPulse)
+                )
+                Text(
+                    text = stringResourceSafe(context, R.string.status_cleaning),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -342,7 +404,10 @@ private fun ResultCard(originalUrl: String, cleanedUrl: String) {
                 text = stringResource(R.string.cleaned_url),
                 style = MaterialTheme.typography.labelLarge
             )
-            Text(text = cleanedUrl, style = MaterialTheme.typography.bodyMedium)
+            ScrollableUrlText(
+                text = cleanedUrl,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -353,9 +418,12 @@ private fun ResultActionsRow(
     cleanedUrl: String,
     onClose: () -> Unit
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
             onClick = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 shareCleanedUrl(context, cleanedUrl, launchAsNewTask = true)
                 onClose()
             },
@@ -369,6 +437,7 @@ private fun ResultActionsRow(
         ) {
             OutlinedButton(
                 onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     copyCleanedUrl(context, cleanedUrl)
                     onClose()
                 },
@@ -378,6 +447,7 @@ private fun ResultActionsRow(
             }
             OutlinedButton(
                 onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     openCleanedUrl(context, cleanedUrl, launchAsNewTask = true)
                     onClose()
                 },
@@ -526,14 +596,21 @@ private fun DomainSettingsSection(
 }
 
 @Composable
-private fun SettingsToggleRow(
+internal fun SettingsToggleRow(
     labelResId: Int,
     checked: Boolean,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                enabled = enabled,
+                role = Role.Switch,
+                onClick = { onCheckedChange(!checked) }
+            ),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = stringResource(labelResId), style = MaterialTheme.typography.bodyMedium)
@@ -672,6 +749,20 @@ private fun statusTextFor(context: Context, status: CleanerStatus): String {
         CleanerStatus.AlreadyClean -> context.getString(R.string.status_already_clean)
         CleanerStatus.Cleaned -> context.getString(R.string.status_cleaned)
     }
+}
+
+private fun statusChipContainerColor(status: CleanerStatus, colorScheme: ColorScheme) = when (status) {
+    CleanerStatus.ManualHint -> colorScheme.surfaceContainerHighest
+    CleanerStatus.NoUrl -> colorScheme.errorContainer
+    CleanerStatus.AlreadyClean -> colorScheme.secondaryContainer
+    CleanerStatus.Cleaned -> colorScheme.primaryContainer
+}
+
+private fun statusChipLabelColor(status: CleanerStatus, colorScheme: ColorScheme) = when (status) {
+    CleanerStatus.ManualHint -> colorScheme.onSurfaceVariant
+    CleanerStatus.NoUrl -> colorScheme.onErrorContainer
+    CleanerStatus.AlreadyClean -> colorScheme.onSecondaryContainer
+    CleanerStatus.Cleaned -> colorScheme.onPrimaryContainer
 }
 
 private fun stringResourceSafe(context: Context, resId: Int, vararg formatArgs: Any): String {

@@ -20,6 +20,9 @@
     <string name="status_no_url">No URL found in the text.</string>
     <string name="status_cleaning">Resolving and cleaning link...</string>
     <string name="status_cleaned">Cleaned link is ready.</string>
+    <string name="status_action_copied">Copied</string>
+    <string name="status_action_opened">Opened</string>
+    <string name="status_action_shared">Share options opened</string>
     <string name="status_already_clean">Link looks clean already.</string>
     <string name="copied_to_clipboard">Copied cleaned link</string>
     <string name="share_clean_link">Share cleaned link</string>

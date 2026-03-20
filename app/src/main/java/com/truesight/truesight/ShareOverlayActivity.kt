@@ -11,6 +11,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,25 +29,36 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.truesight.truesight.ui.theme.TruesightTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class ShareSheetContentState {
     NoUrl,
     Cleaning,
     Ready
 }
+
+private const val ACTION_FEEDBACK_DURATION_MILLIS = 300L
 
 class ShareOverlayActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,7 +133,11 @@ private fun ShareOverlaySheet(
                     .animateContentSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Crossfade(targetState = contentState, label = "share-overlay-state") { state ->
+                Crossfade(
+                    targetState = contentState,
+                    animationSpec = tween(durationMillis = 220),
+                    label = "share-overlay-state"
+                ) { state ->
                     when (state) {
                         ShareSheetContentState.NoUrl -> NoUrlContent(onDismiss = onDismiss)
                         ShareSheetContentState.Cleaning -> CleaningContent()
@@ -139,23 +155,71 @@ private fun ShareOverlaySheet(
 
             AnimatedVisibility(
                 visible = contentState == ShareSheetContentState.Ready,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+                enter = fadeIn(animationSpec = tween(durationMillis = 180)) +
+                    expandVertically(animationSpec = tween(durationMillis = 220)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                    shrinkVertically(animationSpec = tween(durationMillis = 180))
             ) {
                 val cleaned = uiState.cleanedUrl ?: return@AnimatedVisibility
-                ShareActionButtonsRow(
-                    onShare = {
-                        shareCleanedUrl(context, cleaned)
-                        onDismiss()
-                    },
-                    onCopy = {
-                        copyToClipboard(context, cleaned)
-                        onDismiss()
-                    },
-                    onOpen = {
-                        openCleanedUrl(context, cleaned)
-                        onDismiss()
-                    }
+                ShareReadyActions(cleanedUrl = cleaned, onDismiss = onDismiss)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShareReadyActions(cleanedUrl: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    var actionFeedback by remember { mutableStateOf<Int?>(null) }
+    val actionsEnabled = actionFeedback == null
+
+    fun triggerAction(feedbackResId: Int, action: () -> Unit) {
+        if (!actionsEnabled) {
+            return
+        }
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        action()
+        actionFeedback = feedbackResId
+        scope.launch {
+            delay(ACTION_FEEDBACK_DURATION_MILLIS)
+            onDismiss()
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ShareActionButtonsRow(
+            enabled = actionsEnabled,
+            onShare = {
+                triggerAction(R.string.status_action_shared) {
+                    shareCleanedUrl(context, cleanedUrl)
+                }
+            },
+            onCopy = {
+                triggerAction(R.string.status_action_copied) {
+                    copyToClipboard(context, cleanedUrl)
+                }
+            },
+            onOpen = {
+                triggerAction(R.string.status_action_opened) {
+                    openCleanedUrl(context, cleanedUrl)
+                }
+            }
+        )
+        AnimatedVisibility(visible = actionFeedback != null, enter = fadeIn(), exit = fadeOut()) {
+            val actionLabelRes = actionFeedback ?: return@AnimatedVisibility
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                tonalElevation = 1.dp,
+                modifier = Modifier.testTag("share_overlay_action_feedback")
+            ) {
+                Text(
+                    text = stringResource(actionLabelRes),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }
         }
@@ -172,6 +236,7 @@ private fun contentStateFor(uiState: ShareOverlayUiState): ShareSheetContentStat
 
 @Composable
 private fun ShareActionButtonsRow(
+    enabled: Boolean,
     onShare: () -> Unit,
     onCopy: () -> Unit,
     onOpen: () -> Unit
@@ -183,6 +248,7 @@ private fun ShareActionButtonsRow(
     ) {
         Button(
             onClick = onShare,
+            enabled = enabled,
             modifier = Modifier
                 .weight(1f)
                 .testTag("share_overlay_action_share")
@@ -191,6 +257,7 @@ private fun ShareActionButtonsRow(
         }
         OutlinedButton(
             onClick = onCopy,
+            enabled = enabled,
             modifier = Modifier
                 .weight(1f)
                 .testTag("share_overlay_action_copy")
@@ -199,6 +266,7 @@ private fun ShareActionButtonsRow(
         }
         OutlinedButton(
             onClick = onOpen,
+            enabled = enabled,
             modifier = Modifier
                 .weight(1f)
                 .testTag("share_overlay_action_open")
@@ -268,7 +336,10 @@ private fun ReadyContent(
                 text = stringResource(R.string.cleaned_url),
                 style = MaterialTheme.typography.labelLarge
             )
-            Text(text = cleanedUrl, style = MaterialTheme.typography.bodyMedium)
+            ScrollableUrlText(
+                text = cleanedUrl,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

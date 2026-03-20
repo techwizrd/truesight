@@ -17,6 +17,9 @@ local.properties
 # Logs
 *.log
 
+# Local tooling config
+.tapcue.toml
+
 # iOS / Xcode
 DerivedData/
 *.xcuserstate
