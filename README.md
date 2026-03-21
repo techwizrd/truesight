@@ -1,7 +1,7 @@
 # Truesight
 
 [![CI](https://img.shields.io/github/actions/workflow/status/techwizrd/truesight/ci.yml?branch=main&label=CI)](https://github.com/techwizrd/truesight/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/techwizrd/truesight)](LICENSE)
+[![License](https://img.shields.io/github/license/techwizrd/truesight?branch=main&v=1)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
 [![Android](https://img.shields.io/badge/Android-Jetpack%20Compose-3DDC84?logo=android)](https://developer.android.com/jetpack/compose)
 
