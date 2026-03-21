@@ -53,15 +53,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleRelease
 
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: app/build/outputs/apk/debug/app-debug.apk
-          fail_on_unmatched_files: true
-          overwrite_files: true
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG_NAME="${GITHUB_REF_NAME}"
+          APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" "${APK_PATH}" --clobber
+          else
+            gh release create "${TAG_NAME}" "${APK_PATH}" --generate-notes
+          fi
 
   release_unreleased:
     if: github.ref == 'refs/heads/main'
@@ -92,16 +98,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew :app:assembleRelease
 
       - name: Create or update unreleased prerelease
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: unreleased
-          name: Unreleased
-          prerelease: true
-          make_latest: false
-          generate_release_notes: true
-          files: app/build/outputs/apk/debug/app-debug.apk
-          fail_on_unmatched_files: true
-          overwrite_files: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          if gh release view unreleased >/dev/null 2>&1; then
+            gh release edit unreleased --title "Unreleased" --prerelease --latest=false
+            gh release upload unreleased "${APK_PATH}" --clobber
+          else
+            gh release create unreleased "${APK_PATH}" --title "Unreleased" --prerelease --latest=false --generate-notes
+          fi
