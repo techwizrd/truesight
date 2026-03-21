@@ -21,7 +21,19 @@ final class IOSCleanerPolicyStore: CleanerPolicyStore {
             instagramStripEnabled: defaults.object(forKey: Keys.instagramStrip) as? Bool ?? true,
             ampCacheRedirectEnabled: defaults.object(forKey: Keys.ampCacheRedirect) as? Bool ?? true,
             ampCacheStripEnabled: defaults.object(forKey: Keys.ampCacheStrip) as? Bool ?? true,
-            twitterToNitterEnabled: defaults.object(forKey: Keys.twitterToNitter) as? Bool ?? false
+            twitterToNitterEnabled: defaults.object(forKey: Keys.twitterToNitter) as? Bool ?? false,
+            adTracking: AdTrackingPolicy(
+                googleEnabled: defaults.object(forKey: Keys.googleAdsTrackingStrip) as? Bool ?? true,
+                googleAggressiveEnabled: defaults.object(forKey: Keys.aggressiveGoogleAdsStripping) as? Bool ?? false,
+                metaEnabled: defaults.object(forKey: Keys.metaAdsTrackingStrip) as? Bool ?? true,
+                microsoftEnabled: defaults.object(forKey: Keys.microsoftAdsTrackingStrip) as? Bool ?? true,
+                tiktokEnabled: defaults.object(forKey: Keys.tiktokAdsTrackingStrip) as? Bool ?? true,
+                twitterEnabled: defaults.object(forKey: Keys.twitterAdsTrackingStrip) as? Bool ?? true,
+                linkedInEnabled: defaults.object(forKey: Keys.linkedInAdsTrackingStrip) as? Bool ?? true,
+                pinterestEnabled: defaults.object(forKey: Keys.pinterestAdsTrackingStrip) as? Bool ?? true,
+                snapchatEnabled: defaults.object(forKey: Keys.snapchatAdsTrackingStrip) as? Bool ?? true
+            ),
+            utmTrackingStripEnabled: defaults.object(forKey: Keys.utmTrackingStrip) as? Bool ?? true
         )
     }
 
@@ -38,6 +50,16 @@ final class IOSCleanerPolicyStore: CleanerPolicyStore {
         defaults.set(policy.ampCacheRedirectEnabled, forKey: Keys.ampCacheRedirect)
         defaults.set(policy.ampCacheStripEnabled, forKey: Keys.ampCacheStrip)
         defaults.set(policy.twitterToNitterEnabled, forKey: Keys.twitterToNitter)
+        defaults.set(policy.adTracking.googleEnabled, forKey: Keys.googleAdsTrackingStrip)
+        defaults.set(policy.adTracking.googleAggressiveEnabled, forKey: Keys.aggressiveGoogleAdsStripping)
+        defaults.set(policy.adTracking.metaEnabled, forKey: Keys.metaAdsTrackingStrip)
+        defaults.set(policy.adTracking.microsoftEnabled, forKey: Keys.microsoftAdsTrackingStrip)
+        defaults.set(policy.adTracking.tiktokEnabled, forKey: Keys.tiktokAdsTrackingStrip)
+        defaults.set(policy.adTracking.twitterEnabled, forKey: Keys.twitterAdsTrackingStrip)
+        defaults.set(policy.adTracking.linkedInEnabled, forKey: Keys.linkedInAdsTrackingStrip)
+        defaults.set(policy.adTracking.pinterestEnabled, forKey: Keys.pinterestAdsTrackingStrip)
+        defaults.set(policy.adTracking.snapchatEnabled, forKey: Keys.snapchatAdsTrackingStrip)
+        defaults.set(policy.utmTrackingStripEnabled, forKey: Keys.utmTrackingStrip)
     }
 }
 
@@ -54,4 +76,14 @@ private enum Keys {
     static let ampCacheRedirect = "amp_cache_redirect_enabled"
     static let ampCacheStrip = "amp_cache_strip_enabled"
     static let twitterToNitter = "twitter_to_nitter_enabled"
+    static let googleAdsTrackingStrip = "google_ads_tracking_strip_enabled"
+    static let metaAdsTrackingStrip = "meta_ads_tracking_strip_enabled"
+    static let microsoftAdsTrackingStrip = "microsoft_ads_tracking_strip_enabled"
+    static let tiktokAdsTrackingStrip = "tiktok_ads_tracking_strip_enabled"
+    static let twitterAdsTrackingStrip = "twitter_ads_tracking_strip_enabled"
+    static let linkedInAdsTrackingStrip = "linkedin_ads_tracking_strip_enabled"
+    static let pinterestAdsTrackingStrip = "pinterest_ads_tracking_strip_enabled"
+    static let snapchatAdsTrackingStrip = "snapchat_ads_tracking_strip_enabled"
+    static let aggressiveGoogleAdsStripping = "aggressive_google_ads_stripping_enabled"
+    static let utmTrackingStrip = "utm_tracking_strip_enabled"
 }
