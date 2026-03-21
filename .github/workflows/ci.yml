@@ -87,7 +87,7 @@ jobs:
           fetch-depth: 0
 
       - name: Move unreleased tag to current commit
-        run: git push origin :refs/tags/unreleased || true && git tag -f unreleased "${GITHUB_SHA}" && git push origin refs/tags/unreleased
+        run: git tag -f unreleased "${GITHUB_SHA}" && git push --force origin refs/tags/unreleased
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
