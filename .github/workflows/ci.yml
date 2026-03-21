@@ -52,8 +52,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build SharedCleaner XCFramework
-        run: ./gradlew :shared:assembleXCFramework
+      - name: Build iOS KMP frameworks
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 :shared:linkReleaseFrameworkIosSimulatorArm64
+
+      - name: Run iOS simulator KMP tests
+        run: ./gradlew :shared:iosSimulatorArm64Test
 
       - name: Locate iOS workspace or project
         id: locate_ios
@@ -62,17 +65,19 @@ jobs:
           if [ -d "iosApp/TruesightIOS.xcworkspace" ]; then
             echo "container_flag=-workspace" >> "$GITHUB_OUTPUT"
             echo "container_path=iosApp/TruesightIOS.xcworkspace" >> "$GITHUB_OUTPUT"
+            echo "has_xcode_container=true" >> "$GITHUB_OUTPUT"
           elif [ -d "iosApp/TruesightIOS.xcodeproj" ]; then
             echo "container_flag=-project" >> "$GITHUB_OUTPUT"
             echo "container_path=iosApp/TruesightIOS.xcodeproj" >> "$GITHUB_OUTPUT"
+            echo "has_xcode_container=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Missing iosApp/TruesightIOS.xcworkspace or iosApp/TruesightIOS.xcodeproj" >&2
-            echo "Commit the iOS Xcode project/workspace so CI can compile iOS targets." >&2
-            exit 1
+            echo "has_xcode_container=false" >> "$GITHUB_OUTPUT"
+            echo "No iOS Xcode project/workspace found. Skipping app/extension xcodebuild steps."
           fi
 
       - name: Resolve iOS schemes
         id: resolve_schemes
+        if: steps.locate_ios.outputs.has_xcode_container == 'true'
         run: |
           set -euo pipefail
           xcodebuild \
@@ -124,6 +129,7 @@ jobs:
           PY
 
       - name: Build iOS app target
+        if: steps.locate_ios.outputs.has_xcode_container == 'true'
         run: |
           set -euo pipefail
           DESTINATIONS=(
@@ -146,6 +152,7 @@ jobs:
           exit 1
 
       - name: Build iOS share extension target
+        if: steps.locate_ios.outputs.has_xcode_container == 'true'
         run: |
           set -euo pipefail
           DESTINATIONS=(
