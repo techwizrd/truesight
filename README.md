@@ -123,7 +123,8 @@ Contributions are welcome and appreciated.
 
 - [iOS integration guide](iosApp/README.md)
 - [CI workflow](.github/workflows/ci.yml)
-- [F-Droid metadata template](fdroid/com.truesight.truesight.yml)
+- [F-Droid metadata](fdroid/org.sarkhel.truesight.yml)
+- [F-Droid submission notes](fdroid/README.md)
 - [Kotlin Multiplatform docs](https://kotlinlang.org/docs/multiplatform.html)
 - [Android Emulator setup](https://developer.android.com/studio/run/emulator)
 

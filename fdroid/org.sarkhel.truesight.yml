@@ -1,7 +1,8 @@
 Categories:
   - Internet
 License: Apache-2.0
-AuthorName: Truesight Contributors
+AuthorName: Kunal K. Sarkhel
+WebSite: https://github.com/techwizrd/truesight
 SourceCode: https://github.com/techwizrd/truesight
 IssueTracker: https://github.com/techwizrd/truesight/issues
 Changelog: https://github.com/techwizrd/truesight/releases
@@ -17,14 +18,17 @@ Description: |
 
 RepoType: git
 Repo: https://github.com/techwizrd/truesight.git
+MaintainerNotes: |
+  Android APK is built from the repository root using Gradle.
+  iOS sources are present but not used for F-Droid builds.
 
 Builds:
   - versionName: 0.1.0
     versionCode: 1
     commit: v0.1.0
-    subdir: app
     gradle:
       - yes
+    output: app/build/outputs/apk/release/app-release-unsigned.apk
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags v\d+\.\d+\.\d+

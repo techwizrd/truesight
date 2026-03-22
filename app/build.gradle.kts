@@ -27,7 +27,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.truesight.truesight"
+        applicationId = "org.sarkhel.truesight"
         minSdk = 21
         targetSdk = 36
         versionCode = 1
