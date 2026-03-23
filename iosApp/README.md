@@ -10,6 +10,10 @@ This directory contains iOS adapters for the shared KMP cleaner core.
 - `TruesightIOS/IOSRedirectFollower.swift`
 - `TruesightIOS/CleanerFactory.swift`
 - `TruesightIOS/SharedCleanerBridge.swift`
+- `TruesightIOS/PolicyDraft.swift`
+- `TruesightIOS/IOSCleanerViewModel.swift`
+- `TruesightIOS/CleanerRootView.swift`
+- `TruesightIOS/TruesightIOSApp.swift`
 
 ### Share extension target (`TruesightShareExtension`)
 
@@ -34,6 +38,13 @@ This directory contains iOS adapters for the shared KMP cleaner core.
 let bridge = SharedCleanerBridge()
 let cleaned = bridge.cleanFirstUrl(fromText: "Check this https://x.com/user/status/123?utm_source=share")
 ```
+
+The SwiftUI app UI now mirrors Android feature coverage using iOS conventions:
+
+- `NavigationStack` with a cleaner screen and settings screen
+- Input + clean workflow with status and progress states
+- Result actions for share, copy, and open
+- Settings parity for domain controls, UTM stripping, and ad-vendor toggles
 
 ## Usage in share extension
 
