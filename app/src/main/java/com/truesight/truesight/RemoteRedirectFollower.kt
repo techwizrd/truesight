@@ -2,7 +2,9 @@ package com.truesight.truesight
 
 import android.util.Log
 import com.truesight.truesight.shared.RemoteRedirectResolver
+import com.truesight.truesight.shared.RedirectFollowResult
 import com.truesight.truesight.shared.RedirectFollower
+import com.truesight.truesight.shared.RedirectFollowerWithStats
 import java.net.HttpURLConnection
 import java.net.URL
 import java.io.InputStream
@@ -12,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.LinkedHashMap
 import java.util.concurrent.TimeUnit
 
-object RemoteRedirectFollower : RedirectFollower {
+object RemoteRedirectFollower : RedirectFollower, RedirectFollowerWithStats {
     private const val tag = "RedirectFollower"
     private const val connectTimeoutMs = 1800
     private const val readTimeoutMs = 3500
@@ -43,12 +45,7 @@ object RemoteRedirectFollower : RedirectFollower {
         return followIfNeeded(url, policy)
     }
 
-    data class RedirectFollowResult(
-        val resolvedUrl: String,
-        val redirectCount: Int
-    )
-
-    fun followWithResult(url: String, policy: CleanerPolicy): RedirectFollowResult {
+    override fun followWithResult(url: String, policy: CleanerPolicy): RedirectFollowResult {
         return followIfNeededInternal(url, policy)
     }
 

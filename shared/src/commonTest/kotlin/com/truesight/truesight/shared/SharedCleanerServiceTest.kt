@@ -33,4 +33,47 @@ class SharedCleanerServiceTest {
 
         assertNull(service.cleanFirstUrlFromText("no links here"))
     }
+
+    @Test
+    fun cleanFirstUrlFromTextWithResultReturnsOriginalAndCleanedValues() {
+        val store = object : CleanerPolicyStore {
+            override fun loadPolicy(): CleanerPolicy = CleanerPolicy()
+            override fun savePolicy(policy: CleanerPolicy) = Unit
+        }
+        val follower = object : RedirectFollower, RedirectFollowerWithStats {
+            override fun follow(url: String, policy: CleanerPolicy): String {
+                return followWithResult(url, policy).resolvedUrl
+            }
+
+            override fun followWithResult(url: String, policy: CleanerPolicy): RedirectFollowResult {
+                return RedirectFollowResult(
+                    resolvedUrl = "https://example.com/article?utm_source=share&id=42",
+                    redirectCount = 2
+                )
+            }
+        }
+        val service = SharedCleanerService(store, follower)
+
+        val result = service.cleanFirstUrlFromTextWithResult(
+            "open https://amzn.to/demo?utm_source=share&id=42 now"
+        )
+
+        requireNotNull(result)
+        assertEquals("https://amzn.to/demo?utm_source=share&id=42", result.originalUrl)
+        assertEquals("https://example.com/article?id=42", result.cleanedUrl)
+        assertEquals(1, result.paramsRemoved)
+        assertEquals(2, result.redirectsFollowed)
+    }
+
+    @Test
+    fun cleanFirstUrlFromTextWithResultReturnsNullForNoUrl() {
+        val store = object : CleanerPolicyStore {
+            override fun loadPolicy(): CleanerPolicy = CleanerPolicy()
+            override fun savePolicy(policy: CleanerPolicy) = Unit
+        }
+        val follower = RedirectFollower { url, _ -> url }
+        val service = SharedCleanerService(store, follower)
+
+        assertNull(service.cleanFirstUrlFromTextWithResult("still no links here"))
+    }
 }

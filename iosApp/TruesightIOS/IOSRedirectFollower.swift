@@ -1,47 +1,25 @@
 import Foundation
 import SharedCleaner
 
-final class IOSRedirectFollower: NSObject, RedirectFollower {
-    private let session: URLSession
+final class IOSRedirectFollower: NSObject, RedirectFollower, RedirectFollowerWithStats, RedirectLocationFetcher, RedirectBodyFetcher {
     private let timeout: TimeInterval = 3.5
-
-    override init() {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 3.5
-        config.timeoutIntervalForResource = 3.5
-        self.session = URLSession(configuration: config)
-        super.init()
-    }
+    private let maxBodyChars = 256_000
+    private let resolver = SharedRedirectResolver()
 
     func follow(url: String, policy: CleanerPolicy) -> String {
-        guard shouldFollow(url: url, policy: policy) else {
-            return url
-        }
-
-        let followed = resolveFinalURL(url: url) ?? url
-        let redditResolved = resolveRedditDestinationIfNeeded(url: followed)
-        return redditResolved ?? followed
+        followWithResult(url: url, policy: policy).resolvedUrl
     }
 
-    private func shouldFollow(url: String, policy: CleanerPolicy) -> Bool {
-        guard let host = URL(string: url)?.host?.lowercased() else {
-            return false
-        }
-
-        if !policy.isRedirectEnabledForHost(host: host) {
-            return false
-        }
-
-        return host == "share.google.com" ||
-            host == "share.google" ||
-            host == "amzn.to" ||
-            host == "a.co" ||
-            host == "reddit.com" ||
-            host == "redd.it" ||
-            host.hasSuffix(".reddit.com")
+    func followWithResult(url: String, policy: CleanerPolicy) -> RedirectFollowResult {
+        resolver.followWithResult(
+            url: url,
+            policy: policy,
+            locationFetcher: self,
+            bodyFetcher: self
+        )
     }
 
-    private func resolveFinalURL(url: String) -> String? {
+    func fetchRedirectLocation(url: String) -> String? {
         guard let target = URL(string: url) else {
             return nil
         }
@@ -55,72 +33,41 @@ final class IOSRedirectFollower: NSObject, RedirectFollower {
         )
 
         let semaphore = DispatchSemaphore(value: 0)
-        var resolved: String?
+        var statusCode = 0
+        var location: String?
 
-        let task = session.dataTask(with: request) { _, response, _ in
-            if let finalURL = response?.url?.absoluteString {
-                resolved = finalURL
+        let redirectDelegate = RedirectProbeDelegate()
+        let redirectSession = URLSession(
+            configuration: URLSessionConfiguration.default,
+            delegate: redirectDelegate,
+            delegateQueue: nil
+        )
+
+        let task = redirectSession.dataTask(with: request) { _, response, _ in
+            if let http = response as? HTTPURLResponse {
+                statusCode = http.statusCode
+                location = redirectDelegate.redirectLocation
             }
             semaphore.signal()
         }
 
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
-        return resolved
-    }
+        redirectSession.invalidateAndCancel()
 
-    private func resolveRedditDestinationIfNeeded(url: String) -> String? {
-        guard let parsed = URL(string: url), let host = parsed.host?.lowercased() else {
+        guard (300..<400).contains(statusCode) else {
             return nil
         }
 
-        let isReddit = host == "reddit.com" || host == "redd.it" || host.hasSuffix(".reddit.com")
-        guard isReddit, parsed.path.contains("/comments/") else {
+        return location
+    }
+
+    func fetchBody(url: String) -> String? {
+        guard let target = URL(string: url) else {
             return nil
         }
 
-        guard let jsonURL = buildRedditJsonURL(from: parsed),
-              let data = fetchData(url: jsonURL),
-              let root = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-              let listing = root.first,
-              let dataNode = listing["data"] as? [String: Any],
-              let children = dataNode["children"] as? [[String: Any]],
-              let child = children.first,
-              let childData = child["data"] as? [String: Any]
-        else {
-            return nil
-        }
-
-        if let overridden = childData["url_overridden_by_dest"] as? String,
-           overridden.hasPrefix("http://") || overridden.hasPrefix("https://") {
-            return overridden
-        }
-
-        if let fallback = childData["url"] as? String,
-           fallback.hasPrefix("http://") || fallback.hasPrefix("https://") {
-            return fallback
-        }
-
-        return nil
-    }
-
-    private func buildRedditJsonURL(from url: URL) -> URL? {
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        var path = components?.path ?? ""
-        if !path.hasSuffix(".json") {
-            path = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            path = "/\(path).json"
-        }
-        components?.path = path
-
-        var items = components?.queryItems ?? []
-        items.append(URLQueryItem(name: "raw_json", value: "1"))
-        components?.queryItems = items
-        return components?.url
-    }
-
-    private func fetchData(url: URL) -> Data? {
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: target)
         request.httpMethod = "GET"
         request.timeoutInterval = timeout
         request.setValue(
@@ -129,11 +76,14 @@ final class IOSRedirectFollower: NSObject, RedirectFollower {
         )
 
         let semaphore = DispatchSemaphore(value: 0)
-        var body: Data?
+        var body: String?
 
-        let task = session.dataTask(with: request) { data, response, _ in
-            if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
-                body = data
+        let task = URLSession.shared.dataTask(with: request) { data, response, _ in
+            if let http = response as? HTTPURLResponse,
+               (200..<300).contains(http.statusCode),
+               let data,
+               let text = String(data: data, encoding: .utf8) {
+                body = String(text.prefix(self.maxBodyChars))
             }
             semaphore.signal()
         }
@@ -141,5 +91,20 @@ final class IOSRedirectFollower: NSObject, RedirectFollower {
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
         return body
+    }
+}
+
+private final class RedirectProbeDelegate: NSObject, URLSessionTaskDelegate {
+    var redirectLocation: String?
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        redirectLocation = response.value(forHTTPHeaderField: "Location")
+        completionHandler(nil)
     }
 }
