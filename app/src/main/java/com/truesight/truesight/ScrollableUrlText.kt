@@ -17,6 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +48,12 @@ internal fun ScrollableUrlText(
     val scrollState = rememberScrollState()
     val trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SCROLL_TRACK_ALPHA)
     val thumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SCROLL_THUMB_ALPHA)
+    val scrollProgress by remember {
+        derivedStateOf {
+            val maxValue = scrollState.maxValue
+            if (maxValue == 0) 0f else scrollState.value.toFloat() / maxValue.toFloat()
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -70,8 +78,7 @@ internal fun ScrollableUrlText(
             val contentPx = viewportPx + scrollState.maxValue.toFloat()
             val thumbFraction = (viewportPx / contentPx).coerceIn(MIN_THUMB_FRACTION, 1f)
             val thumbHeight = maxHeight * thumbFraction
-            val progress = scrollState.value.toFloat() / scrollState.maxValue.toFloat()
-            val thumbOffset = (maxHeight - thumbHeight) * progress
+            val thumbOffset = (maxHeight - thumbHeight) * scrollProgress
 
             VerticalScrollIndicator(
                 trackColor = trackColor,

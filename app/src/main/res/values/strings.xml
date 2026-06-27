@@ -2,7 +2,6 @@
     <string name="app_name">Truesight</string>
     <string name="paste_hint">Paste a link or text with a link</string>
     <string name="clean_link">Clean Link</string>
-    <string name="actions_title">Clean link ready</string>
     <string name="cleaned_summary_template">Removed %1$s and %2$s</string>
     <plurals name="params_removed_count">
         <item quantity="one">%d param</item>
@@ -18,7 +17,7 @@
     <string name="close">Close</string>
     <string name="manual_mode_hint">Share from another app or paste text below.</string>
     <string name="status_no_url">No URL found in the text.</string>
-    <string name="status_cleaning">Resolving and cleaning link...</string>
+    <string name="status_cleaning">Resolving and cleaning link&#8230;</string>
     <string name="status_cleaned">Cleaned link is ready.</string>
     <string name="status_action_copied">Copied</string>
     <string name="status_action_opened">Opened</string>
@@ -61,8 +60,6 @@
     <string name="setting_strip_linkedin_ads">Strip LinkedIn Ads parameters</string>
     <string name="setting_strip_pinterest_ads">Strip Pinterest Ads parameters</string>
     <string name="setting_strip_snapchat_ads">Strip Snapchat Ads parameters</string>
-    <string name="settings">Settings</string>
-    <string name="back">Back</string>
     <string name="cd_open_settings">Open settings</string>
     <string name="cd_back_to_cleaner">Back to cleaner</string>
 </resources>

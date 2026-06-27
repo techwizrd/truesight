@@ -1,6 +1,6 @@
 package com.truesight.truesight
 
-import android.net.Uri
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -59,7 +59,7 @@ object UrlCleaner {
     }
 
     private fun countQueryParams(url: String): Int {
-        val rawQuery = Uri.parse(url).encodedQuery ?: return 0
+        val rawQuery = url.toUri().encodedQuery ?: return 0
         if (rawQuery.isBlank()) {
             return 0
         }

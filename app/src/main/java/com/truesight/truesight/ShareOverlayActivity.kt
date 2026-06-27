@@ -39,11 +39,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -110,7 +111,8 @@ private fun ShareOverlaySheet(
     }
 
     val context = LocalContext.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
+    val density = LocalDensity.current
+    val screenHeightDp = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
     val contentState = contentStateFor(uiState)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 

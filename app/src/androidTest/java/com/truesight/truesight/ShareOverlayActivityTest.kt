@@ -83,17 +83,15 @@ class ShareOverlayActivityTest {
         composeRule.onAllNodesWithTag("share_overlay_action_feedback").assertCountEquals(0)
     }
 
-    private fun longTrackedUrl(): String {
-        return buildString {
-            append("https://example.com/path?")
-            repeat(1200) { index ->
-                append("utm_param")
-                append(index)
-                append("=value")
-                append(index)
-                append('&')
-            }
-            append("id=42")
+    private fun longTrackedUrl(): String = buildString {
+        append("https://example.com/path?")
+        repeat(1200) { index ->
+            append("utm_param")
+            append(index)
+            append("=value")
+            append(index)
+            append('&')
         }
+        append("id=42")
     }
 }

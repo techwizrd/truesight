@@ -57,9 +57,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,7 +74,8 @@ internal fun LinkStripperApp(
     sharePayload: SharePayload?
 ) {
     val context = LocalContext.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
+    val density = LocalDensity.current
+    val screenHeightDp = with(density) { LocalWindowInfo.current.containerSize.height.toDp() }
     val factory = remember(context) { CleanerViewModelFactory(context) }
     val cleanerViewModel: CleanerViewModel = viewModel(factory = factory)
     val uiState = cleanerViewModel.uiState

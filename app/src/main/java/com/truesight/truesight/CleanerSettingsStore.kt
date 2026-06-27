@@ -1,6 +1,7 @@
 package com.truesight.truesight
 
 import android.content.Context
+import androidx.core.content.edit
 import com.truesight.truesight.shared.CleanerPolicyStore
 import java.util.concurrent.atomic.AtomicLong
 
@@ -43,31 +44,31 @@ class CleanerSettingsStore(context: Context) : CleanerPolicyStore, PolicyVersion
 
     override fun savePolicy(policy: CleanerPolicy) {
         val nextVersion = policyVersion.incrementAndGet()
-        prefs.edit()
-            .putBoolean(keyGoogleShareRedirect, policy.googleShareRedirectEnabled)
-            .putBoolean(keyGoogleShareStrip, policy.googleShareStripEnabled)
-            .putBoolean(keyRedditRedirect, policy.redditRedirectEnabled)
-            .putBoolean(keyRedditStrip, policy.redditStripEnabled)
-            .putBoolean(keyAmazonRedirect, policy.amazonRedirectEnabled)
-            .putBoolean(keyAmazonStrip, policy.amazonStripEnabled)
-            .putBoolean(keyAmazonRemoveAffiliateTag, policy.amazonRemoveAffiliateTagEnabled)
-            .putBoolean(keyInstagramRedirect, policy.instagramRedirectEnabled)
-            .putBoolean(keyInstagramStrip, policy.instagramStripEnabled)
-            .putBoolean(keyAmpCacheRedirect, policy.ampCacheRedirectEnabled)
-            .putBoolean(keyAmpCacheStrip, policy.ampCacheStripEnabled)
-            .putBoolean(keyTwitterToNitter, policy.twitterToNitterEnabled)
-            .putBoolean(keyGoogleAdsTrackingStrip, policy.adTracking.googleEnabled)
-            .putBoolean(keyMetaAdsTrackingStrip, policy.adTracking.metaEnabled)
-            .putBoolean(keyMicrosoftAdsTrackingStrip, policy.adTracking.microsoftEnabled)
-            .putBoolean(keyTiktokAdsTrackingStrip, policy.adTracking.tiktokEnabled)
-            .putBoolean(keyTwitterAdsTrackingStrip, policy.adTracking.twitterEnabled)
-            .putBoolean(keyLinkedInAdsTrackingStrip, policy.adTracking.linkedInEnabled)
-            .putBoolean(keyPinterestAdsTrackingStrip, policy.adTracking.pinterestEnabled)
-            .putBoolean(keySnapchatAdsTrackingStrip, policy.adTracking.snapchatEnabled)
-            .putBoolean(keyAggressiveGoogleAdsStripping, policy.adTracking.googleAggressiveEnabled)
-            .putBoolean(keyUtmTrackingStrip, policy.utmTrackingStripEnabled)
-            .putLong(keyPolicyVersion, nextVersion)
-            .apply()
+        prefs.edit {
+            putBoolean(keyGoogleShareRedirect, policy.googleShareRedirectEnabled)
+            putBoolean(keyGoogleShareStrip, policy.googleShareStripEnabled)
+            putBoolean(keyRedditRedirect, policy.redditRedirectEnabled)
+            putBoolean(keyRedditStrip, policy.redditStripEnabled)
+            putBoolean(keyAmazonRedirect, policy.amazonRedirectEnabled)
+            putBoolean(keyAmazonStrip, policy.amazonStripEnabled)
+            putBoolean(keyAmazonRemoveAffiliateTag, policy.amazonRemoveAffiliateTagEnabled)
+            putBoolean(keyInstagramRedirect, policy.instagramRedirectEnabled)
+            putBoolean(keyInstagramStrip, policy.instagramStripEnabled)
+            putBoolean(keyAmpCacheRedirect, policy.ampCacheRedirectEnabled)
+            putBoolean(keyAmpCacheStrip, policy.ampCacheStripEnabled)
+            putBoolean(keyTwitterToNitter, policy.twitterToNitterEnabled)
+            putBoolean(keyGoogleAdsTrackingStrip, policy.adTracking.googleEnabled)
+            putBoolean(keyMetaAdsTrackingStrip, policy.adTracking.metaEnabled)
+            putBoolean(keyMicrosoftAdsTrackingStrip, policy.adTracking.microsoftEnabled)
+            putBoolean(keyTiktokAdsTrackingStrip, policy.adTracking.tiktokEnabled)
+            putBoolean(keyTwitterAdsTrackingStrip, policy.adTracking.twitterEnabled)
+            putBoolean(keyLinkedInAdsTrackingStrip, policy.adTracking.linkedInEnabled)
+            putBoolean(keyPinterestAdsTrackingStrip, policy.adTracking.pinterestEnabled)
+            putBoolean(keySnapchatAdsTrackingStrip, policy.adTracking.snapchatEnabled)
+            putBoolean(keyAggressiveGoogleAdsStripping, policy.adTracking.googleAggressiveEnabled)
+            putBoolean(keyUtmTrackingStrip, policy.utmTrackingStripEnabled)
+            putLong(keyPolicyVersion, nextVersion)
+        }
     }
 
     private companion object {
